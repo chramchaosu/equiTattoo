@@ -1,0 +1,1928 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11121c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="equiTattoo">
+<title>equiTattoo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  /* Layout: one column for phones. A top bar, one screen at a time
+     (Tattoos, Equipment, Backup, or the tattoo editor), and a tab bar
+     fixed to the bottom. Pop-up windows use the built-in <dialog>.
+
+     Colours borrow from the studio: stencil-transfer purple as the accent,
+     green-soap teal for "good", ink-navy for text. */
+  :root {
+    --paper: #f3f4f8;
+    --surface: #ffffff;
+    --sunken: #e9ebf2;
+    --ink: #181a2c;
+    --muted: #5c6178;
+    --line: #d9dce7;
+    --stencil: #5a3ccf;
+    --stencil-soft: #ebe7fb;
+    --on-stencil: #ffffff;
+    --soap: #0e7466;
+    --soap-soft: #dcf1ec;
+    --warn: #a4500b;
+    --warn-soft: #fbead9;
+    --danger: #b3261e;
+    --shadow: 0 1px 2px rgb(24 26 44 / 0.06), 0 6px 24px rgb(24 26 44 / 0.08);
+
+    --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+    --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-code: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --radius: 14px;
+    --radius-small: 9px;
+    --tabbar-height: 64px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11121c; --surface: #1b1d2b; --sunken: #252839; --ink: #ebecf5;
+      --muted: #a1a6bd; --line: #30344a; --stencil: #a896ff; --stencil-soft: #2c2753;
+      --on-stencil: #15112e; --soap: #5ccbb7; --soap-soft: #16352f; --warn: #f2a65e;
+      --warn-soft: #3b2a17; --danger: #ff8e85; --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #11121c; --surface: #1b1d2b; --sunken: #252839; --ink: #ebecf5;
+    --muted: #a1a6bd; --line: #30344a; --stencil: #a896ff; --stencil-soft: #2c2753;
+    --on-stencil: #15112e; --soap: #5ccbb7; --soap-soft: #16352f; --warn: #f2a65e;
+    --warn-soft: #3b2a17; --danger: #ff8e85; --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.45 var(--font-body);
+    -webkit-text-size-adjust: 100%;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; margin: 0; text-wrap: balance; }
+  :focus-visible { outline: 3px solid var(--stencil); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ---------- Page frame ---------- */
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; z-index: 10;
+    height: env(safe-area-inset-top, 0px); background: var(--paper);
+  }
+  .topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--paper);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 12px 10px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { font-size: 1.35rem; font-weight: 800; flex: 1; min-width: 0; }
+  .wordmark { font-family: var(--font-display); font-weight: 800; font-size: 0.8rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--stencil); }
+  main {
+    max-width: 720px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 16px calc(var(--tabbar-height) + 88px + env(safe-area-inset-bottom, 0px));
+  }
+  .view { display: grid; gap: 16px; }
+
+  .tabbar {
+    position: fixed; inset: auto 0 0; z-index: 5;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+  }
+  .tabbar button {
+    height: var(--tabbar-height); border: 0; background: none; cursor: pointer;
+    display: grid; place-items: center; align-content: center; gap: 2px;
+    font-size: 0.78rem; font-weight: 700; color: var(--muted);
+  }
+  .tabbar svg { width: 24px; height: 24px; }
+  .tabbar button[aria-current="page"] { color: var(--stencil); }
+
+  /* ---------- Buttons, chips, fields ---------- */
+  .button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 18px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); font-weight: 700;
+    text-decoration: none;
+  }
+  .button.primary { background: var(--stencil); border-color: var(--stencil); color: var(--on-stencil); }
+  .button.danger { color: var(--danger); }
+  .button.quiet { border-color: transparent; background: transparent; }
+  .button:disabled { opacity: 0.5; cursor: default; }
+  .button svg { width: 20px; height: 20px; flex: none; }
+  .icon-button {
+    width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent;
+    display: grid; place-items: center; cursor: pointer; flex: none;
+  }
+  .icon-button svg { width: 24px; height: 24px; }
+
+  .fab {
+    position: fixed; z-index: 4;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--tabbar-height) + 16px + env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--shadow); min-height: 54px; padding: 0 22px; font-size: 1.02rem;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    min-height: 38px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 0.92rem;
+  }
+  .chip[aria-pressed="true"] { background: var(--stencil); border-color: var(--stencil); color: var(--on-stencil); }
+  .chip .count { font-weight: 400; opacity: 0.75; margin-left: 4px; }
+
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field > label, .field-label {
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  .field-label .optional { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .input {
+    width: 100%; min-height: 46px; padding: 10px 12px; border-radius: var(--radius-small);
+    border: 1px solid var(--line); background: var(--surface);
+  }
+  textarea.input { min-height: 84px; resize: vertical; }
+  .input[aria-invalid="true"] { border-color: var(--danger); }
+  .field-error { color: var(--danger); font-size: 0.88rem; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  .row > .field { flex: 1 1 140px; }
+
+  .stepper { display: flex; align-items: center; gap: 4px; }
+  .stepper .input { width: 72px; text-align: center; font-variant-numeric: tabular-nums; }
+  .stepper button {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--surface); font-size: 1.3rem; font-weight: 700; cursor: pointer;
+  }
+
+  .code {
+    font-family: var(--font-code); font-weight: 700; font-size: 0.86rem;
+    padding: 3px 8px; border-radius: 6px; background: var(--stencil-soft); color: var(--stencil);
+    white-space: nowrap;
+  }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.88rem; }
+
+  /* ---------- Cards and lists ---------- */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 14px; min-width: 0; }
+  .panel > h2 { font-size: 1.15rem; display: flex; align-items: baseline; gap: 8px; }
+  .panel > h2 .muted { font-family: var(--font-body); font-size: 0.88rem; font-weight: 400; }
+
+  .month-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+    font-family: var(--font-body); font-weight: 700; margin-top: 8px; }
+  .list { display: grid; gap: 8px; }
+  .tattoo-card {
+    display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center;
+    padding: 10px; border-radius: var(--radius); border: 1px solid var(--line);
+    background: var(--surface); cursor: pointer; text-align: left; width: 100%;
+  }
+  .thumb {
+    width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--sunken);
+    display: grid; place-items: center; font-family: var(--font-display); font-weight: 800;
+    color: var(--muted); font-size: 1.3rem;
+  }
+  .tattoo-card .name { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+  .tattoo-card .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 4px; font-size: 0.88rem; color: var(--muted); }
+
+  .stock-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+  }
+  .stock-row .info { min-width: 0; cursor: pointer; background: none; border: 0; text-align: left; padding: 0; display: grid; gap: 4px; }
+  .stock-row .title { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .badge.low { background: var(--warn-soft); color: var(--warn); }
+  .badge.ok { background: var(--soap-soft); color: var(--soap); }
+  .qty { font-family: var(--font-code); font-weight: 700; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
+
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+  .summary strong { display: block; font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .summary span { font-size: 0.8rem; color: var(--muted); }
+
+  .empty { text-align: center; padding: 40px 16px; display: grid; gap: 10px; justify-items: center; }
+  .empty h2 { font-size: 1.3rem; }
+  .empty p { margin: 0; max-width: 34ch; color: var(--muted); }
+  .empty svg { width: 56px; height: 56px; color: var(--stencil); }
+
+  .search { position: relative; }
+  .search .input { padding-left: 40px; border-radius: 999px; }
+  .search svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; width: 20px; height: 20px; color: var(--muted); }
+
+  /* ---------- Tattoo editor ---------- */
+  .used-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+    padding: 10px 12px; border-radius: var(--radius-small); background: var(--sunken);
+  }
+  .used-row button.info { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .photo-tile {
+    position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 10px; overflow: hidden;
+    border: 0; padding: 0; background: var(--sunken); cursor: pointer;
+  }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-tile .stamp {
+    position: absolute; inset: auto 0 0; padding: 14px 6px 4px; font-size: 0.7rem; font-weight: 700;
+    color: #fff; background: linear-gradient(transparent, rgb(0 0 0 / 0.7)); text-align: left;
+  }
+  .add-tile {
+    aspect-ratio: 1; max-width: 100%; border-radius: 10px; border: 2px dashed var(--line);
+    display: grid; place-items: center; align-content: center; gap: 4px; cursor: pointer;
+    color: var(--stencil); font-weight: 700; font-size: 0.85rem; text-align: center;
+  }
+  .add-tile svg { width: 26px; height: 26px; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .editor-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+
+  /* ---------- Dialogs ---------- */
+  dialog {
+    width: min(560px, calc(100% - 24px)); max-height: calc(100% - 24px);
+    border: 0; border-radius: 20px; padding: 0; background: var(--surface); color: var(--ink);
+    box-shadow: 0 20px 60px rgb(0 0 0 / 0.3);
+  }
+  dialog::backdrop { background: rgb(10 10 20 / 0.55); }
+  .dialog-body { padding: 20px; display: grid; gap: 16px; }
+  .dialog-body > h2 { font-size: 1.3rem; }
+  .dialog-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  .dialog-actions .spacer { flex: 1; }
+  .scan-box { display: grid; gap: 10px; padding: 12px; border-radius: var(--radius-small); background: var(--stencil-soft); }
+  .scan-box img { max-height: 160px; width: auto; border-radius: 8px; justify-self: start; }
+  .scan-box pre { white-space: pre-wrap; font-family: var(--font-code); font-size: 0.8rem; margin: 6px 0 0; max-height: 140px; overflow: auto; }
+  .note { padding: 10px 12px; border-radius: var(--radius-small); font-size: 0.92rem; }
+  .note.good { background: var(--soap-soft); color: var(--soap); }
+  .note.warn { background: var(--warn-soft); color: var(--warn); }
+  .photo-full { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 10px; background: var(--sunken); }
+  .check { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+  .check input { width: 22px; height: 22px; accent-color: var(--stencil); }
+
+  .toast {
+    position: fixed; left: 50%; translate: -50% 0; z-index: 20;
+    bottom: calc(var(--tabbar-height) + 84px + env(safe-area-inset-bottom, 0px));
+    background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px;
+    font-weight: 700; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center;
+  }
+  .banner { padding: 12px 14px; border-radius: var(--radius); background: var(--warn-soft); color: var(--warn); }
+  .backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .backup-actions label.button { position: relative; }
+</style>
+
+<!-- Icons used across the app, drawn once and reused with <use href="#icon-..."> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="icon-tattoo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l6 6M12 6l6 6M4 20l7.5-7.5M9.5 8.5l6 6-3 3-6-6z"/></symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/></symbol>
+    <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="icon-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="icon-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <button class="icon-button" id="back-button" type="button" aria-label="Back" hidden><svg><use href="#icon-back"/></svg></button>
+  <h1 id="screen-title">Tattoos</h1>
+  <span class="wordmark">equiTattoo</span>
+</header>
+
+<main>
+  <div class="banner" id="storage-banner" hidden></div>
+
+  <!-- Screen 1: list of tattoos -->
+  <section class="view" id="view-tattoos" aria-labelledby="screen-title">
+    <div class="search">
+      <svg><use href="#icon-search"/></svg>
+      <input class="input" id="tattoo-search" type="search" placeholder="Search by client or tattoo" autocomplete="off" aria-label="Search tattoos">
+    </div>
+    <div id="tattoo-list" class="list"></div>
+  </section>
+
+  <!-- Screen 2: cartridge stock -->
+  <section class="view" id="view-equipment" hidden>
+    <div class="summary" id="stock-summary"></div>
+    <div id="stock-list" class="list"></div>
+  </section>
+
+  <!-- Screen 3: backup -->
+  <section class="view" id="view-backup" hidden>
+    <div class="panel">
+      <h2>Where your data lives</h2>
+      <p class="muted" style="margin:0">Everything is saved only on this device, inside this browser. If you clear the browser's website data, or lose the phone, it is gone. Save a backup file regularly and keep it somewhere safe, for example in iCloud Drive or Google Drive.</p>
+      <p class="small" id="storage-usage" style="margin:0"></p>
+    </div>
+    <div class="panel">
+      <h2>Save a backup</h2>
+      <p class="muted" style="margin:0">Creates one file with all tattoos, photos and stock.</p>
+      <div class="backup-actions">
+        <button class="button primary" id="export-button" type="button"><svg><use href="#icon-save"/></svg>Save backup file</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Restore from a backup</h2>
+      <p class="muted" style="margin:0">Adds everything from a backup file. Records already on this device with the same ID are replaced by the backup's version; nothing else is deleted.</p>
+      <div class="backup-actions">
+        <label class="button" for="import-input">Choose backup file</label>
+        <input class="visually-hidden" id="import-input" type="file" accept="application/json,.json">
+      </div>
+    </div>
+  </section>
+
+  <!-- Screen 4: add or edit one tattoo -->
+  <section class="view" id="view-editor" hidden>
+    <form id="tattoo-form" class="view" novalidate>
+      <div class="panel">
+        <h2>Session</h2>
+        <div class="row">
+          <div class="field">
+            <label for="tattoo-date">Date</label>
+            <input class="input" id="tattoo-date" type="date" required>
+          </div>
+          <div class="field" style="flex-grow:2">
+            <label for="tattoo-client">Client name</label>
+            <input class="input" id="tattoo-client" type="text" required autocomplete="off" autocapitalize="words" list="client-names">
+            <datalist id="client-names"></datalist>
+          </div>
+        </div>
+        <div class="field">
+          <label for="tattoo-description">Tattoo <span class="optional">(optional)</span></label>
+          <input class="input" id="tattoo-description" type="text" placeholder="e.g. Fine-line rose, left forearm" autocomplete="off">
+        </div>
+        <div class="field-error" id="editor-error" role="alert" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h2>Client <span class="muted">optional questions</span></h2>
+        <div class="field">
+          <span class="field-label" id="age-label">Age</span>
+          <div class="chips" id="age-chips" role="group" aria-labelledby="age-label"></div>
+        </div>
+        <div class="field">
+          <span class="field-label" id="gender-label">Gender</span>
+          <div class="chips" id="gender-chips" role="group" aria-labelledby="gender-label"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Cartridges used</h2>
+        <div class="list" id="used-list"></div>
+        <div class="row">
+          <button class="button" type="button" id="add-used-by-hand"><svg><use href="#icon-hand"/></svg>Add by hand</button>
+          <button class="button" type="button" id="add-used-by-photo"><svg><use href="#icon-camera"/></svg>Scan label</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Reference photos <span class="muted">from the client</span></h2>
+        <div class="photo-grid" data-photo-kind="reference"></div>
+      </div>
+      <div class="panel">
+        <h2>Finished tattoo</h2>
+        <div class="photo-grid" data-photo-kind="finished"></div>
+      </div>
+      <div class="panel">
+        <h2>Healed tattoo</h2>
+        <div class="photo-grid" data-photo-kind="healed"></div>
+      </div>
+
+      <div class="panel">
+        <div class="field">
+          <label for="tattoo-notes">Notes <span class="optional">(optional)</span></label>
+          <textarea class="input" id="tattoo-notes"></textarea>
+        </div>
+      </div>
+
+      <div class="editor-actions">
+        <button class="button danger" type="button" id="delete-tattoo">Delete tattoo</button>
+        <button class="button primary" type="submit" id="save-tattoo">Save tattoo</button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<button class="button primary fab" id="fab" type="button"><svg><use href="#icon-plus"/></svg><span id="fab-label">New tattoo</span></button>
+
+<nav class="tabbar" aria-label="Sections">
+  <button type="button" data-tab="tattoos" aria-current="page"><svg><use href="#icon-tattoo"/></svg>Tattoos</button>
+  <button type="button" data-tab="equipment"><svg><use href="#icon-box"/></svg>Equipment</button>
+  <button type="button" data-tab="backup"><svg><use href="#icon-save"/></svg>Backup</button>
+</nav>
+
+<!-- Pop-up: add or edit a cartridge (used on a tattoo, or kept in stock) -->
+<dialog id="cartridge-dialog" aria-labelledby="cartridge-dialog-title">
+  <form class="dialog-body" id="cartridge-form" novalidate>
+    <h2 id="cartridge-dialog-title">Cartridge</h2>
+
+    <div class="scan-box" id="scan-box" hidden>
+      <div class="row" style="align-items:center">
+        <img id="scan-preview" alt="Photo of the cartridge label" hidden>
+        <div style="flex:1;min-width:0">
+          <strong id="scan-status">Reading label…</strong>
+          <details id="scan-details" hidden><summary class="small">Text found on the label</summary><pre id="scan-text"></pre></details>
+        </div>
+      </div>
+    </div>
+
+    <div class="field" id="favourites-field">
+      <span class="field-label">Most used</span>
+      <div class="chips" id="favourite-chips"></div>
+    </div>
+
+    <div class="field">
+      <label for="cartridge-brand">Brand</label>
+      <div class="chips" id="brand-chips"></div>
+      <input class="input" id="cartridge-brand" type="text" autocomplete="off" autocapitalize="words" list="brand-names" placeholder="Type a brand">
+      <datalist id="brand-names"></datalist>
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="gauge-label">Needle thickness</span>
+      <div class="chips" id="gauge-chips" role="group" aria-labelledby="gauge-label"></div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="cartridge-count">Needle count</label>
+        <div class="stepper" data-stepper-for="cartridge-count">
+          <button type="button" data-step="-1" aria-label="One needle fewer">−</button>
+          <input class="input" id="cartridge-count" type="number" inputmode="numeric" min="1" max="99">
+          <button type="button" data-step="1" aria-label="One needle more">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="cartridge-config">Type</label>
+      <div class="chips" id="config-chips"></div>
+      <input class="input" id="cartridge-config" type="text" autocomplete="off" autocapitalize="characters" placeholder="Or type another, e.g. RLLT">
+    </div>
+
+    <!-- Only when adding a cartridge to a tattoo -->
+    <div class="field" id="use-fields">
+      <label for="cartridge-used">How many cartridges were used</label>
+      <div class="stepper" data-stepper-for="cartridge-used">
+        <button type="button" data-step="-1" aria-label="One fewer">−</button>
+        <input class="input" id="cartridge-used" type="number" inputmode="numeric" min="1" max="999">
+        <button type="button" data-step="1" aria-label="One more">+</button>
+      </div>
+      <div id="stock-match"></div>
+    </div>
+
+    <!-- Only when editing stock -->
+    <div class="row" id="stock-fields">
+      <div class="field">
+        <label for="cartridge-quantity">In stock</label>
+        <div class="stepper" data-stepper-for="cartridge-quantity">
+          <button type="button" data-step="-1" aria-label="One fewer">−</button>
+          <input class="input" id="cartridge-quantity" type="number" inputmode="numeric" min="0" max="9999">
+          <button type="button" data-step="1" aria-label="One more">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="cartridge-low">Warn when at or below</label>
+        <input class="input" id="cartridge-low" type="number" inputmode="numeric" min="0" max="9999" style="max-width:120px">
+      </div>
+    </div>
+
+    <div class="field-error" id="cartridge-error" role="alert" hidden></div>
+
+    <div class="dialog-actions">
+      <button class="button danger quiet" type="button" id="cartridge-delete">Remove</button>
+      <span class="spacer"></span>
+      <button class="button" type="button" id="cartridge-scan"><svg><use href="#icon-camera"/></svg>Scan label</button>
+      <button class="button" type="button" value="cancel" id="cartridge-cancel">Cancel</button>
+      <button class="button primary" type="submit">Done</button>
+    </div>
+    <input class="visually-hidden" id="scan-input" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+  </form>
+</dialog>
+
+<!-- Pop-up: one photo, full size, with its time -->
+<dialog id="photo-dialog" aria-label="Photo">
+  <div class="dialog-body">
+    <img class="photo-full" id="photo-full" alt="">
+    <div class="field">
+      <label for="photo-time">Taken</label>
+      <input class="input" id="photo-time" type="datetime-local">
+    </div>
+    <div class="dialog-actions">
+      <button class="button danger quiet" type="button" id="photo-delete">Delete photo</button>
+      <span class="spacer"></span>
+      <button class="button primary" type="button" id="photo-done">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Pop-up: "are you sure?" -->
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <div class="dialog-body">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-message" style="margin:0"></p>
+    <div class="dialog-actions">
+      <button class="button" type="button" id="confirm-no">Cancel</button>
+      <button class="button primary" type="button" id="confirm-yes">OK</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   equiTattoo — tattoo log and cartridge stock for one tattoo artist.
+
+   Everything runs in the browser; data is stored on the device with
+   IndexedDB (the browser's built-in database, which can also hold photos).
+
+   Sections of this script:
+     1. Fixed lists (age groups, needle sizes, cartridge types, brands)
+     2. Small helpers
+     3. Database
+     4. Photos (shrinking and storing)
+     5. Reading cartridge labels from a photo
+     6. Cartridge statistics ("most used")
+     7. Screens and navigation
+     8. Tattoo list
+     9. Tattoo editor
+    10. Cartridge pop-up
+    11. Equipment (stock)
+    12. Backup
+    13. Start-up
+   ========================================================================= */
+
+
+/* ---------- 1. Fixed lists ---------- */
+
+// Six age groups covering 15 to 99+.
+const AGE_GROUPS = ['15–24', '25–34', '35–44', '45–54', '55–64', '65–99+'];
+const GENDERS = ['Woman', 'Man', 'Non-binary', 'Other'];
+const PHOTO_KINDS = ['reference', 'finished', 'healed'];
+
+// Needle thickness. Labels usually print the gauge number (#12 = "12" in 1203RL)
+// or the diameter in millimetres.
+const NEEDLE_GAUGES = [
+  { gauge: 6, mm: '0.20' },
+  { gauge: 8, mm: '0.25' },
+  { gauge: 10, mm: '0.30' },
+  { gauge: 12, mm: '0.35' },
+  { gauge: 14, mm: '0.40' },
+];
+
+// Common needle groupings. Users can also type any other code.
+const STANDARD_CONFIGS = {
+  RL: 'Round Liner',
+  RS: 'Round Shader',
+  M1: 'Magnum',
+  M2: 'Stacked Magnum',
+  RM: 'Curved Magnum',
+  CM: 'Curved Magnum',
+  F: 'Flat',
+};
+
+// Codes the label reader looks for. Longer codes first, so "RLLT" wins over "RL".
+const LABEL_CONFIG_CODES = ['RLLT', 'RSLT', 'RLXT', 'CM', 'RM', 'M1', 'M2', 'RL', 'RS', 'MG', 'F', 'TL'];
+const CONFIG_WORDS = [
+  [/ROUND\s*LINER/, 'RL'],
+  [/ROUND\s*SHADER/, 'RS'],
+  [/(CURVED|ROUND|SOFT\s*EDGE)\s*MAG/, 'RM'],
+  [/STACKED\s*MAG/, 'M2'],
+  [/MAGNUM/, 'M1'],
+  [/\bFLAT\b/, 'F'],
+];
+
+// Brands offered before the user has saved any of their own.
+const KNOWN_BRANDS = [
+  'Cheyenne', 'Kwadron', 'FK Irons', 'Bishop', 'Peak', 'Kingpin', 'Big Wasp', 'Mast',
+  'EZ', 'Emalla', 'Inkjecta', 'Electrum', 'Killer Ink', 'Dragonhawk', 'Vertix', 'Sabre',
+];
+
+const DEFAULT_LOW_STOCK = 5;
+const PHOTO_MAX_SIDE = 1600;   // pixels; keeps photos sharp but small
+const THUMB_MAX_SIDE = 320;
+const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+
+
+/* ---------- 2. Small helpers ---------- */
+
+const $ = (selector, root = document) => root.querySelector(selector);
+
+/** Builds an element: el('p', { class: 'muted' }, 'Hello'). Text is never parsed as HTML. */
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else if (key === 'value' || key === 'checked') node[key] = value;
+    else node.setAttribute(key, value === true ? '' : value);
+  }
+  node.append(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
+  return node;
+}
+
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#icon-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+function newId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  // Fallback for pages opened from a file, where randomUUID may be missing.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const pad2 = (number) => String(number).padStart(2, '0');
+
+/** Today's date as YYYY-MM-DD in the phone's own time zone. */
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+/** A Date as the value a datetime-local input expects (local time, no seconds). */
+function toLocalInputValue(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function parseIsoDate(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+const stampFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+const formatDate = (isoDate) => dateFormat.format(parseIsoDate(isoDate));
+
+function daysBetween(fromIsoDate, toDate) {
+  const from = parseIsoDate(fromIsoDate);
+  const to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+  return Math.round((to - from) / 86_400_000);
+}
+
+function clampInt(value, min, max, fallback) {
+  const number = Number.parseInt(value, 10);
+  if (Number.isNaN(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+let toastTimer;
+function showToast(message) {
+  const toast = $('#toast');
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+}
+
+/** In-page "are you sure?" question. Resolves to true or false. */
+function askConfirm({ title, message, confirmLabel = 'OK', danger = false }) {
+  const dialog = $('#confirm-dialog');
+  $('#confirm-title').textContent = title;
+  $('#confirm-message').textContent = message;
+  const yes = $('#confirm-yes');
+  yes.textContent = confirmLabel;
+  yes.classList.toggle('danger', danger);
+  yes.classList.toggle('primary', !danger);
+  return new Promise((resolve) => {
+    const finish = (answer) => {
+      yes.onclick = null;
+      $('#confirm-no').onclick = null;
+      dialog.onclose = null;
+      if (dialog.open) dialog.close();
+      resolve(answer);
+    };
+    yes.onclick = () => finish(true);
+    $('#confirm-no').onclick = () => finish(false);
+    dialog.onclose = () => finish(false);
+    dialog.showModal();
+  });
+}
+
+// Pictures shown on screen use temporary "object URLs". They are freed when
+// the screen showing them is redrawn, so memory does not keep growing.
+const objectUrls = { list: [], editor: [] };
+function trackUrl(group, blob) {
+  const url = URL.createObjectURL(blob);
+  objectUrls[group].push(url);
+  return url;
+}
+function releaseUrls(group) {
+  objectUrls[group].forEach((url) => URL.revokeObjectURL(url));
+  objectUrls[group] = [];
+}
+
+
+/* ---------- 3. Database ----------
+   Three tables ("object stores"):
+     cartridges  stock items: { id, brand, gauge, needleCount, config, quantity, lowStockAt, ... }
+     tattoos     { id, date, clientName, description, ageGroup, gender, notes,
+                   cartridges: [{ id, brand, gauge, needleCount, config, count, stockId }],
+                   coverThumb, createdAt, updatedAt }
+     photos      { id, tattooId, kind, takenAt, image, thumb, addedAt }
+*/
+
+const DB_NAME = 'equiTattoo';
+const DB_VERSION = 1;
+let db = null;
+
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains('cartridges')) {
+        database.createObjectStore('cartridges', { keyPath: 'id' });
+      }
+      if (!database.objectStoreNames.contains('tattoos')) {
+        database.createObjectStore('tattoos', { keyPath: 'id' }).createIndex('date', 'date');
+      }
+      if (!database.objectStoreNames.contains('photos')) {
+        database.createObjectStore('photos', { keyPath: 'id' }).createIndex('tattooId', 'tattooId');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('The app is open in another tab. Close it there and reload.'));
+  });
+}
+
+/**
+ * Runs `work` inside one transaction and waits until everything is written.
+ * If anything fails, nothing is saved. If `work` returns a request, its result is returned.
+ */
+function runTransaction(storeNames, mode, work) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeNames, mode);
+    let outcome;
+    transaction.oncomplete = () => resolve(outcome instanceof IDBRequest ? outcome.result : outcome);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error ?? new Error('Saving was cancelled.'));
+    try {
+      outcome = work(transaction);
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
+  });
+}
+
+const getAll = (storeName) =>
+  runTransaction(storeName, 'readonly', (t) => t.objectStore(storeName).getAll());
+
+const getPhotosForTattoo = (tattooId) =>
+  runTransaction('photos', 'readonly', (t) => t.objectStore('photos').index('tattooId').getAll(tattooId));
+
+const putRecord = (storeName, record) =>
+  runTransaction(storeName, 'readwrite', (t) => { t.objectStore(storeName).put(record); });
+
+const deleteRecord = (storeName, id) =>
+  runTransaction(storeName, 'readwrite', (t) => { t.objectStore(storeName).delete(id); });
+
+/** Adds `change` to a stock item's quantity inside an open transaction (never below zero). */
+function adjustStockInTransaction(transaction, stockId, change) {
+  const store = transaction.objectStore('cartridges');
+  const request = store.get(stockId);
+  request.onsuccess = () => {
+    const item = request.result;
+    if (!item) return; // the stock item was deleted; nothing to adjust
+    item.quantity = Math.max(0, item.quantity + change);
+    item.updatedAt = new Date().toISOString();
+    store.put(item);
+  };
+}
+
+/**
+ * Saves a tattoo together with its photo changes and stock changes in one go.
+ * stockChanges: Map of stockId -> number to add (negative = taken from stock).
+ */
+function saveTattooRecord(tattoo, photosToSave, photoIdsToDelete, stockChanges) {
+  return runTransaction(['tattoos', 'photos', 'cartridges'], 'readwrite', (t) => {
+    t.objectStore('tattoos').put(tattoo);
+    const photos = t.objectStore('photos');
+    photosToSave.forEach((photo) => photos.put(photo));
+    photoIdsToDelete.forEach((id) => photos.delete(id));
+    stockChanges.forEach((change, stockId) => {
+      if (change !== 0) adjustStockInTransaction(t, stockId, change);
+    });
+  });
+}
+
+function deleteTattooRecord(tattooId) {
+  return runTransaction(['tattoos', 'photos'], 'readwrite', (t) => {
+    t.objectStore('tattoos').delete(tattooId);
+    const photos = t.objectStore('photos');
+    const keysRequest = photos.index('tattooId').getAllKeys(tattooId);
+    keysRequest.onsuccess = () => keysRequest.result.forEach((key) => photos.delete(key));
+  });
+}
+
+/** Asks the browser not to clear our data when the phone runs low on space. */
+async function requestPersistentStorage() {
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+      await navigator.storage.persist();
+    }
+  } catch { /* not supported; the data is still saved */ }
+}
+
+
+/* ---------- 4. Photos ---------- */
+
+async function loadImage(file) {
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch { /* fall back to <img> below */ }
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function drawScaled(image, maxSide) {
+  const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function canvasToJpeg(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('This photo could not be read.'))),
+      'image/jpeg',
+      quality,
+    );
+  });
+}
+
+/** Turns a picked photo into a stored-size image plus a small thumbnail. */
+async function preparePhoto(file) {
+  const image = await loadImage(file);
+  try {
+    const [full, thumb] = await Promise.all([
+      canvasToJpeg(drawScaled(image, PHOTO_MAX_SIDE), 0.82),
+      canvasToJpeg(drawScaled(image, THUMB_MAX_SIDE), 0.75),
+    ]);
+    return { image: full, thumb };
+  } finally {
+    image.close?.();
+  }
+}
+
+
+/* ---------- 5. Reading cartridge labels from a photo ----------
+   Text recognition uses Tesseract.js, downloaded the first time it is needed
+   (about 5 MB, needs internet once). The recognised text is then searched for
+   brand, needle size, needle count and type.
+*/
+
+let ocrWorkerPromise = null;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = el('script', { src, async: true });
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Could not download the label reader. Check the internet connection.'));
+    document.head.append(script);
+  });
+}
+
+function getOcrWorker() {
+  if (!ocrWorkerPromise) {
+    ocrWorkerPromise = (async () => {
+      if (!window.Tesseract) await loadScript(TESSERACT_URL);
+      const worker = await window.Tesseract.createWorker('eng');
+      // "Sparse text" mode suits labels: short bits of text scattered around.
+      await worker.setParameters({ tessedit_pageseg_mode: '11' });
+      return worker;
+    })();
+    // If loading failed, allow a fresh try next time.
+    ocrWorkerPromise.catch(() => { ocrWorkerPromise = null; });
+  }
+  return ocrWorkerPromise;
+}
+
+async function readLabelText(file) {
+  const image = await loadImage(file);
+  const canvas = drawScaled(image, 2000);
+  image.close?.();
+  const worker = await getOcrWorker();
+  const { data } = await worker.recognize(canvas);
+  return data.text ?? '';
+}
+
+/**
+ * Finds cartridge details in label text. Understands for example:
+ *   "1203RL"  -> #12 (0.35 mm), 3 needles, RL
+ *   "0.35mm 7RS", "#10 9 CURVED MAGNUM"
+ * Returns only what it found: { brand?, gauge?, needleCount?, config? }.
+ */
+function parseCartridgeLabel(rawText, knownBrands) {
+  const text = rawText.toUpperCase().replace(/[|]/g, 'I');
+  const found = {};
+
+  // Brand: longest names first, so "Killer Ink" beats "Ink".
+  const brands = [...knownBrands].sort((a, b) => b.length - a.length);
+  for (const brand of brands) {
+    const pattern = escapeRegExp(brand.toUpperCase()).replace(/\s+/g, '\\s*');
+    if (new RegExp(`(^|[^A-Z0-9])${pattern}($|[^A-Z0-9])`).test(text)) {
+      found.brand = brand;
+      break;
+    }
+  }
+
+  // Text recognition often reads 0 as O and 1 as I inside codes.
+  const fixDigits = (value) => value.replace(/O/g, '0').replace(/I/g, '1');
+  const isKnownGauge = (gauge) => NEEDLE_GAUGES.some((g) => g.gauge === gauge);
+  const config = `(${LABEL_CONFIG_CODES.join('|')})`;
+  const digit = '[0-9OI]';
+
+  // The industry code, e.g. 1203RL = gauge 12, 03 needles, Round Liner.
+  const compact = text.match(new RegExp(`(?:^|[^A-Z0-9])(${digit}{2})\\s?(${digit}{2})\\s?${config}(?![A-Z])`));
+  if (compact && isKnownGauge(Number(fixDigits(compact[1])))) {
+    found.gauge = Number(fixDigits(compact[1]));
+    found.needleCount = Number(fixDigits(compact[2]));
+    found.config = compact[3];
+  } else {
+    const countAndConfig = text.match(new RegExp(`(?:^|[^A-Z0-9.,])(\\d{1,2})\\s?${config}(?![A-Z])`));
+    if (countAndConfig) {
+      found.needleCount = Number(countAndConfig[1]);
+      found.config = countAndConfig[2];
+    }
+  }
+
+  if (found.gauge === undefined) {
+    const millimetres = text.match(/0\s?[.,]\s?(\d{2})\s?MM/);
+    const hashGauge = text.match(/#\s?(\d{1,2})(?!\d)/);
+    const fromMm = millimetres && NEEDLE_GAUGES.find((g) => g.mm === `0.${millimetres[1]}`);
+    if (fromMm) found.gauge = fromMm.gauge;
+    else if (hashGauge && isKnownGauge(Number(hashGauge[1]))) found.gauge = Number(hashGauge[1]);
+  }
+
+  // Type written out in words, e.g. "9 CURVED MAGNUM" (the number is the needle count).
+  if (found.config === undefined) {
+    for (const [pattern, code] of CONFIG_WORDS) {
+      const match = text.match(new RegExp(`(?:(\\d{1,2})\\s*)?${pattern.source}`));
+      if (!match) continue;
+      found.config = code;
+      if (found.needleCount === undefined && match[1]) found.needleCount = Number(match[1]);
+      break;
+    }
+  }
+
+  if (!(found.needleCount >= 1 && found.needleCount <= 99)) delete found.needleCount;
+  return found;
+}
+
+
+/* ---------- 6. Cartridge statistics ---------- */
+
+/** Short code used across the industry, e.g. "1203RL". */
+const cartridgeCode = (c) => `${pad2(c.gauge)}${pad2(c.needleCount)}${c.config}`;
+
+function gaugeLabel(gauge) {
+  const known = NEEDLE_GAUGES.find((g) => g.gauge === gauge);
+  return known ? `${known.mm} mm` : `#${gauge}`;
+}
+
+function describeCartridge(c) {
+  const typeName = STANDARD_CONFIGS[c.config];
+  return [gaugeLabel(c.gauge), `${c.needleCount} ${c.needleCount === 1 ? 'needle' : 'needles'}`, typeName]
+    .filter(Boolean).join(' · ');
+}
+
+/** Two cartridges are the same kind when brand, thickness, count and type match. */
+const cartridgeKey = (c) =>
+  [c.brand.trim().toLowerCase(), c.gauge, c.needleCount, c.config.trim().toUpperCase()].join('|');
+
+/** All kinds of cartridge ever used on tattoos, most used first. */
+function cartridgeUsage() {
+  const byKey = new Map();
+  for (const tattoo of state.tattoos) {
+    for (const used of tattoo.cartridges) {
+      const key = cartridgeKey(used);
+      const entry = byKey.get(key) ?? { brand: used.brand, gauge: used.gauge, needleCount: used.needleCount, config: used.config, uses: 0 };
+      entry.uses += used.count;
+      byKey.set(key, entry);
+    }
+  }
+  return [...byKey.values()].sort((a, b) => b.uses - a.uses);
+}
+
+/** Counts how often each value appears (brand or type), most frequent first. */
+function rankValues(pickValue, extras) {
+  const counts = new Map();
+  for (const tattoo of state.tattoos) {
+    for (const used of tattoo.cartridges) {
+      const value = pickValue(used);
+      counts.set(value, (counts.get(value) ?? 0) + used.count);
+    }
+  }
+  for (const item of state.cartridges) {
+    const value = pickValue(item);
+    if (!counts.has(value)) counts.set(value, 0);
+  }
+  for (const value of extras) if (!counts.has(value)) counts.set(value, -1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([value, uses]) => ({ value, uses: Math.max(0, uses) }));
+}
+
+const findStockMatch = (c) => state.cartridges.find((item) => cartridgeKey(item) === cartridgeKey(c));
+
+
+/* ---------- 7. Screens and navigation ---------- */
+
+const state = {
+  tattoos: [],
+  cartridges: [],
+  tab: 'tattoos',
+  editor: null,   // the tattoo being edited, see openEditor()
+};
+
+const TAB_TITLES = { tattoos: 'Tattoos', equipment: 'Equipment', backup: 'Backup' };
+
+function showTab(tab) {
+  state.tab = tab;
+  state.editor = null;
+  releaseUrls('editor');
+  for (const name of ['tattoos', 'equipment', 'backup', 'editor']) {
+    $(`#view-${name}`).hidden = name !== tab;
+  }
+  document.querySelectorAll('.tabbar button').forEach((button) => {
+    if (button.dataset.tab === tab) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  $('.tabbar').hidden = false;
+  $('#back-button').hidden = true;
+  $('#screen-title').textContent = TAB_TITLES[tab];
+  $('#fab').hidden = tab === 'backup';
+  $('#fab-label').textContent = tab === 'equipment' ? 'Add cartridges' : 'New tattoo';
+
+  if (tab === 'tattoos') renderTattooList();
+  if (tab === 'equipment') renderStock();
+  if (tab === 'backup') renderBackupInfo();
+  window.scrollTo(0, 0);
+}
+
+
+/* ---------- 8. Tattoo list ---------- */
+
+function renderTattooList() {
+  releaseUrls('list');
+  const container = $('#tattoo-list');
+  const search = $('#tattoo-search').value.trim().toLowerCase();
+  const tattoos = state.tattoos
+    .filter((t) => !search || `${t.clientName} ${t.description ?? ''}`.toLowerCase().includes(search))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+
+  if (state.tattoos.length === 0) {
+    container.replaceChildren(el('div', { class: 'empty' },
+      icon('tattoo'),
+      el('h2', {}, 'No tattoos yet'),
+      el('p', {}, 'Add a session with the client’s name and date. Photos, cartridges and the optional client questions can be filled in now or later.'),
+    ));
+    return;
+  }
+  if (tattoos.length === 0) {
+    container.replaceChildren(el('p', { class: 'muted' }, `No tattoo matches “${search}”.`));
+    return;
+  }
+
+  const items = [];
+  let currentMonth = '';
+  for (const tattoo of tattoos) {
+    const month = tattoo.date.slice(0, 7);
+    if (month !== currentMonth) {
+      currentMonth = month;
+      const count = tattoos.filter((t) => t.date.startsWith(month)).length;
+      items.push(el('h2', { class: 'month-heading' },
+        `${monthFormat.format(parseIsoDate(`${month}-01`))} · ${count} ${count === 1 ? 'tattoo' : 'tattoos'}`));
+    }
+    items.push(tattooCard(tattoo));
+  }
+  container.replaceChildren(...items);
+}
+
+function tattooCard(tattoo) {
+  const initials = tattoo.clientName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const thumb = tattoo.coverThumb
+    ? el('img', { class: 'thumb', src: trackUrl('list', tattoo.coverThumb), alt: '' })
+    : el('div', { class: 'thumb', 'aria-hidden': 'true' }, initials);
+  const codes = tattoo.cartridges.slice(0, 3).map((c) => el('span', { class: 'code' }, cartridgeCode(c)));
+  if (tattoo.cartridges.length > 3) codes.push(el('span', {}, `+${tattoo.cartridges.length - 3}`));
+
+  return el('button', { class: 'tattoo-card', type: 'button', onclick: () => openEditor(tattoo.id) },
+    thumb,
+    el('div', { style: 'min-width:0' },
+      el('div', { class: 'name' }, tattoo.clientName),
+      tattoo.description ? el('div', { class: 'muted small' }, tattoo.description) : null,
+      el('div', { class: 'meta' }, el('span', {}, formatDate(tattoo.date)), ...codes),
+    ),
+  );
+}
+
+
+/* ---------- 9. Tattoo editor ---------- */
+
+/** Opens the editor for an existing tattoo (by id) or a new one (no id). */
+async function openEditor(tattooId) {
+  const existing = tattooId ? state.tattoos.find((t) => t.id === tattooId) : null;
+  const tattoo = existing
+    ? structuredClone({ ...existing, coverThumb: null })
+    : {
+      id: newId(), date: todayIso(), clientName: '', description: '', ageGroup: null,
+      gender: null, notes: '', cartridges: [], createdAt: new Date().toISOString(),
+    };
+
+  let photos = [];
+  if (existing) {
+    try {
+      photos = (await getPhotosForTattoo(existing.id)).map((photo) => ({ ...photo, isNew: false, changed: false }));
+    } catch (error) {
+      showToast(`Photos could not be loaded: ${error.message}`);
+    }
+  }
+
+  state.editor = {
+    isNew: !existing,
+    tattoo,
+    originalCartridges: existing ? structuredClone(existing.cartridges) : [],
+    photos,
+    deletedPhotoIds: new Set(),
+    dirty: false,
+  };
+
+  for (const name of ['tattoos', 'equipment', 'backup']) $(`#view-${name}`).hidden = true;
+  $('#view-editor').hidden = false;
+  $('.tabbar').hidden = true;
+  $('#fab').hidden = true;
+  $('#back-button').hidden = false;
+  $('#screen-title').textContent = existing ? existing.clientName : 'New tattoo';
+  $('#delete-tattoo').hidden = !existing;
+  $('#editor-error').hidden = true;
+  $('#tattoo-client').removeAttribute('aria-invalid');
+
+  $('#tattoo-date').value = tattoo.date;
+  $('#tattoo-client').value = tattoo.clientName;
+  $('#tattoo-description').value = tattoo.description ?? '';
+  $('#tattoo-notes').value = tattoo.notes ?? '';
+  $('#client-names').replaceChildren(
+    ...[...new Set(state.tattoos.map((t) => t.clientName))].sort().map((name) => el('option', { value: name })),
+  );
+
+  renderChoiceChips('#age-chips', AGE_GROUPS, () => state.editor.tattoo.ageGroup, (value) => { state.editor.tattoo.ageGroup = value; });
+  renderChoiceChips('#gender-chips', GENDERS, () => state.editor.tattoo.gender, (value) => { state.editor.tattoo.gender = value; });
+  renderUsedCartridges();
+  renderEditorPhotos();
+  window.scrollTo(0, 0);
+  if (!existing) $('#tattoo-client').focus();
+}
+
+/** Single-choice chips that can be un-selected again (the questions are optional). */
+function renderChoiceChips(selector, options, getValue, setValue) {
+  const container = $(selector);
+  const draw = () => {
+    container.replaceChildren(...options.map((option) =>
+      el('button', {
+        class: 'chip', type: 'button', 'aria-pressed': String(getValue() === option),
+        onclick: () => {
+          setValue(getValue() === option ? null : option);
+          markEditorDirty();
+          draw();
+        },
+      }, option)));
+  };
+  draw();
+}
+
+function markEditorDirty() {
+  if (state.editor) state.editor.dirty = true;
+}
+
+function renderUsedCartridges() {
+  const { cartridges } = state.editor.tattoo;
+  const list = $('#used-list');
+  if (cartridges.length === 0) {
+    list.replaceChildren(el('p', { class: 'muted small', style: 'margin:0' }, 'None added yet.'));
+    return;
+  }
+  list.replaceChildren(...cartridges.map((used) =>
+    el('div', { class: 'used-row' },
+      el('button', { class: 'info', type: 'button', onclick: () => openCartridgeDialog({ mode: 'use', entry: used }) },
+        el('span', {}, el('span', { class: 'code' }, cartridgeCode(used)), ' ', el('strong', {}, used.brand), used.count > 1 ? ` × ${used.count}` : ''),
+        el('span', { class: 'muted small' }, describeCartridge(used) + (used.stockId ? ' · from stock' : '')),
+      ),
+      el('button', {
+        class: 'icon-button', type: 'button', 'aria-label': `Remove ${cartridgeCode(used)}`,
+        onclick: () => {
+          state.editor.tattoo.cartridges = cartridges.filter((c) => c !== used);
+          markEditorDirty();
+          renderUsedCartridges();
+        },
+      }, icon('close')),
+    )));
+}
+
+function renderEditorPhotos() {
+  releaseUrls('editor');
+  const { photos } = state.editor;
+  for (const kind of PHOTO_KINDS) {
+    const grid = $(`.photo-grid[data-photo-kind="${kind}"]`);
+    const tiles = photos
+      .filter((photo) => photo.kind === kind)
+      .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
+      .map((photo) => el('button', { class: 'photo-tile', type: 'button', 'aria-label': 'Open photo', onclick: () => openPhotoDialog(photo) },
+        el('img', { src: trackUrl('editor', photo.thumb), alt: '' }),
+        el('span', { class: 'stamp' }, photoCaption(photo)),
+      ));
+
+    const inputId = `add-photo-${kind}`;
+    const input = el('input', {
+      class: 'visually-hidden', id: inputId, type: 'file', accept: 'image/*', multiple: true,
+      onchange: (event) => addPhotos(kind, event.target.files),
+    });
+    const addTile = el('label', { class: 'add-tile', for: inputId }, icon('camera'), kind === 'reference' ? 'Add reference' : 'Add photo');
+    grid.replaceChildren(...tiles, addTile, input);
+  }
+}
+
+function photoCaption(photo) {
+  const taken = new Date(photo.takenAt);
+  const stamp = stampFormat.format(taken);
+  if (photo.kind !== 'healed') return stamp;
+  const days = daysBetween($('#tattoo-date').value || todayIso(), taken);
+  return days > 0 ? `${stamp} · day ${days}` : stamp;
+}
+
+async function addPhotos(kind, fileList) {
+  const files = [...fileList];
+  if (files.length === 0) return;
+  showToast(files.length === 1 ? 'Adding photo…' : `Adding ${files.length} photos…`);
+  for (const file of files) {
+    try {
+      const { image, thumb } = await preparePhoto(file);
+      // Use the time the photo was taken if the phone provides it; otherwise "now".
+      const takenAt = new Date(file.lastModified || Date.now()).toISOString();
+      state.editor?.photos.push({
+        id: newId(), tattooId: state.editor.tattoo.id, kind, takenAt, image, thumb,
+        addedAt: new Date().toISOString(), isNew: true, changed: true,
+      });
+    } catch (error) {
+      showToast(`${file.name}: ${error.message}`);
+    }
+  }
+  if (state.editor) {
+    markEditorDirty();
+    renderEditorPhotos();
+  }
+}
+
+function openPhotoDialog(photo) {
+  const dialog = $('#photo-dialog');
+  const url = URL.createObjectURL(photo.image);
+  $('#photo-full').src = url;
+  $('#photo-time').value = toLocalInputValue(new Date(photo.takenAt));
+
+  $('#photo-done').onclick = () => {
+    const value = $('#photo-time').value;
+    if (value) {
+      const takenAt = new Date(value).toISOString();
+      if (takenAt !== photo.takenAt) {
+        photo.takenAt = takenAt;
+        photo.changed = true;
+        markEditorDirty();
+      }
+    }
+    dialog.close();
+  };
+  $('#photo-delete').onclick = () => {
+    state.editor.photos = state.editor.photos.filter((p) => p !== photo);
+    if (!photo.isNew) state.editor.deletedPhotoIds.add(photo.id);
+    markEditorDirty();
+    dialog.close();
+  };
+  dialog.onclose = () => {
+    URL.revokeObjectURL(url);
+    $('#photo-full').removeAttribute('src');
+    renderEditorPhotos();
+  };
+  dialog.showModal();
+}
+
+/** Picks the picture shown in the list: healed first, then finished, then reference. */
+function chooseCoverThumb(photos) {
+  for (const kind of ['healed', 'finished', 'reference']) {
+    const latest = photos.filter((p) => p.kind === kind).sort((a, b) => b.takenAt.localeCompare(a.takenAt))[0];
+    if (latest) return latest.thumb;
+  }
+  return null;
+}
+
+/** Works out how stock should change compared with what was saved before. */
+function stockChangesFor(before, after) {
+  const changes = new Map();
+  for (const used of before) if (used.stockId) changes.set(used.stockId, (changes.get(used.stockId) ?? 0) + used.count);
+  for (const used of after) if (used.stockId) changes.set(used.stockId, (changes.get(used.stockId) ?? 0) - used.count);
+  return changes;
+}
+
+async function saveEditor(event) {
+  event.preventDefault();
+  const editor = state.editor;
+  const { tattoo } = editor;
+  tattoo.date = $('#tattoo-date').value;
+  tattoo.clientName = $('#tattoo-client').value.trim();
+  tattoo.description = $('#tattoo-description').value.trim();
+  tattoo.notes = $('#tattoo-notes').value.trim();
+
+  const problems = [];
+  if (!tattoo.clientName) problems.push('Enter the client’s name.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tattoo.date)) problems.push('Choose the date of the tattoo.');
+  $('#tattoo-client').setAttribute('aria-invalid', String(!tattoo.clientName));
+  if (problems.length) {
+    const error = $('#editor-error');
+    error.textContent = problems.join(' ');
+    error.hidden = false;
+    error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  tattoo.coverThumb = chooseCoverThumb(editor.photos);
+  tattoo.updatedAt = new Date().toISOString();
+  const photosToSave = editor.photos
+    .filter((photo) => photo.changed)
+    .map(({ isNew, changed, ...photo }) => photo);
+
+  const saveButton = $('#save-tattoo');
+  saveButton.disabled = true;
+  try {
+    await saveTattooRecord(tattoo, photosToSave, editor.deletedPhotoIds, stockChangesFor(editor.originalCartridges, tattoo.cartridges));
+    await reloadData();
+    requestPersistentStorage();
+    showToast(editor.isNew ? 'Tattoo saved' : 'Changes saved');
+    showTab('tattoos');
+  } catch (error) {
+    showToast(`Could not save: ${error.message}`);
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
+async function deleteEditorTattoo() {
+  const { tattoo } = state.editor;
+  const confirmed = await askConfirm({
+    title: `Delete ${tattoo.clientName || 'this tattoo'}?`,
+    message: 'The tattoo and all its photos are removed from this device. Stock counts stay as they are.',
+    confirmLabel: 'Delete',
+    danger: true,
+  });
+  if (!confirmed) return;
+  try {
+    await deleteTattooRecord(tattoo.id);
+    await reloadData();
+    showToast('Tattoo deleted');
+    showTab('tattoos');
+  } catch (error) {
+    showToast(`Could not delete: ${error.message}`);
+  }
+}
+
+async function leaveEditor() {
+  if (state.editor?.dirty) {
+    const discard = await askConfirm({
+      title: 'Leave without saving?',
+      message: 'Changes to this tattoo will be lost.',
+      confirmLabel: 'Discard changes',
+      danger: true,
+    });
+    if (!discard) return;
+  }
+  showTab('tattoos');
+}
+
+
+/* ---------- 10. Cartridge pop-up ----------
+   One pop-up for two jobs:
+     mode 'use'   — a cartridge used on the tattoo being edited
+     mode 'stock' — an item in the equipment stock
+*/
+
+let cartridgeDialogContext = null;
+
+function openCartridgeDialog({ mode, entry = null, scan = false }) {
+  const draft = entry
+    ? { ...entry }
+    : { brand: '', gauge: null, needleCount: null, config: '', count: 1, quantity: 0, lowStockAt: DEFAULT_LOW_STOCK };
+  cartridgeDialogContext = { mode, entry, draft };
+
+  const isUse = mode === 'use';
+  $('#cartridge-dialog-title').textContent = isUse
+    ? (entry ? 'Edit cartridge' : 'Add cartridge')
+    : (entry ? 'Edit stock item' : 'Add to stock');
+  $('#use-fields').hidden = !isUse;
+  $('#stock-fields').hidden = isUse;
+  $('#cartridge-delete').hidden = !entry;
+  $('#cartridge-delete').textContent = isUse ? 'Remove' : 'Delete item';
+  $('#cartridge-error').hidden = true;
+  $('#scan-box').hidden = true;
+
+  $('#cartridge-brand').value = draft.brand;
+  $('#cartridge-count').value = draft.needleCount ?? '';
+  $('#cartridge-config').value = draft.config;
+  $('#cartridge-used').value = draft.count ?? 1;
+  $('#cartridge-quantity').value = draft.quantity ?? 0;
+  $('#cartridge-low').value = draft.lowStockAt ?? DEFAULT_LOW_STOCK;
+
+  const favourites = cartridgeUsage().slice(0, 6);
+  $('#favourites-field').hidden = favourites.length === 0 || Boolean(entry);
+  $('#favourite-chips').replaceChildren(...favourites.map((fav) =>
+    el('button', { class: 'chip', type: 'button', onclick: () => fillCartridgeForm(fav) },
+      el('span', { class: 'code', style: 'background:none;padding:0;color:inherit' }, cartridgeCode(fav)), ` ${fav.brand}`,
+      el('span', { class: 'count' }, `×${fav.uses}`))));
+
+  $('#brand-names').replaceChildren(...rankValues((c) => c.brand, KNOWN_BRANDS).map(({ value }) => el('option', { value })));
+  renderCartridgeChips();
+
+  $('#cartridge-dialog').showModal();
+  if (scan) $('#scan-input').click();
+}
+
+/** Copies found or chosen values into the form fields. */
+function fillCartridgeForm({ brand, gauge, needleCount, config }) {
+  const { draft } = cartridgeDialogContext;
+  if (brand) $('#cartridge-brand').value = brand;
+  if (gauge) draft.gauge = gauge;
+  if (needleCount) $('#cartridge-count').value = needleCount;
+  if (config) $('#cartridge-config').value = config;
+  renderCartridgeChips();
+}
+
+/** Redraws brand, thickness and type chips so the current choice is highlighted. */
+function renderCartridgeChips() {
+  const { draft } = cartridgeDialogContext;
+  const brand = $('#cartridge-brand').value.trim();
+  const config = $('#cartridge-config').value.trim().toUpperCase();
+
+  const topBrands = rankValues((c) => c.brand, KNOWN_BRANDS.slice(0, 4)).slice(0, 5);
+  $('#brand-chips').replaceChildren(...topBrands.map(({ value }) =>
+    el('button', {
+      class: 'chip', type: 'button', 'aria-pressed': String(value.toLowerCase() === brand.toLowerCase()),
+      onclick: () => { $('#cartridge-brand').value = value; renderCartridgeChips(); },
+    }, value)));
+
+  $('#gauge-chips').replaceChildren(...NEEDLE_GAUGES.map(({ gauge, mm }) =>
+    el('button', {
+      class: 'chip', type: 'button', 'aria-pressed': String(draft.gauge === gauge),
+      onclick: () => { draft.gauge = gauge; renderCartridgeChips(); },
+    }, `${mm} mm`, el('span', { class: 'count' }, `#${gauge}`))));
+
+  const types = rankValues((c) => c.config, Object.keys(STANDARD_CONFIGS)).slice(0, 8);
+  $('#config-chips').replaceChildren(...types.map(({ value, uses }) =>
+    el('button', {
+      class: 'chip', type: 'button', 'aria-pressed': String(value === config),
+      title: STANDARD_CONFIGS[value] ?? value,
+      onclick: () => { $('#cartridge-config').value = value; renderCartridgeChips(); },
+    }, value, uses > 0 ? el('span', { class: 'count' }, `×${uses}`) : null)));
+
+  renderStockMatch();
+}
+
+/** When adding to a tattoo, shows whether this cartridge is in stock. */
+function renderStockMatch() {
+  const { mode, draft, entry } = cartridgeDialogContext;
+  const box = $('#stock-match');
+  if (mode !== 'use') return;
+  const current = readCartridgeForm();
+  const match = current.ok ? findStockMatch(current.value) : null;
+  if (!match) {
+    box.replaceChildren(current.ok
+      ? el('p', { class: 'note warn', style: 'margin:0' }, 'Not in your stock list, so stock is not changed.')
+      : '');
+    draft.takeFromStock = false;
+    return;
+  }
+  // Pre-tick "take from stock" for new entries, keep the earlier choice when editing.
+  if (draft.takeFromStock === undefined || draft.matchedId !== match.id) {
+    draft.takeFromStock = entry ? entry.stockId === match.id : true;
+    draft.matchedId = match.id;
+  }
+  box.replaceChildren(el('label', { class: 'check note good' },
+    el('input', {
+      type: 'checkbox', checked: draft.takeFromStock,
+      onchange: (event) => { draft.takeFromStock = event.target.checked; },
+    }),
+    `Take from stock (${match.quantity} left)`));
+}
+
+/** Reads and checks the form. Returns { ok, value } or { ok: false, message }. */
+function readCartridgeForm() {
+  const { draft } = cartridgeDialogContext;
+  const brand = $('#cartridge-brand').value.trim().replace(/\s+/g, ' ');
+  const needleCount = clampInt($('#cartridge-count').value, 1, 99, null);
+  const config = $('#cartridge-config').value.trim().toUpperCase().replace(/\s+/g, '');
+  const missing = [];
+  if (!brand) missing.push('brand');
+  if (!draft.gauge) missing.push('needle thickness');
+  if (!needleCount) missing.push('needle count');
+  if (!config) missing.push('type');
+  if (missing.length) return { ok: false, message: `Still missing: ${missing.join(', ')}.` };
+  return { ok: true, value: { brand, gauge: draft.gauge, needleCount, config } };
+}
+
+async function submitCartridgeDialog(event) {
+  event.preventDefault();
+  const { mode, entry, draft } = cartridgeDialogContext;
+  const result = readCartridgeForm();
+  if (!result.ok) {
+    $('#cartridge-error').textContent = result.message;
+    $('#cartridge-error').hidden = false;
+    return;
+  }
+
+  if (mode === 'use') {
+    const match = findStockMatch(result.value);
+    const used = {
+      id: entry?.id ?? newId(),
+      ...result.value,
+      count: clampInt($('#cartridge-used').value, 1, 999, 1),
+      stockId: match && draft.takeFromStock ? match.id : null,
+    };
+    const list = state.editor.tattoo.cartridges;
+    const index = entry ? list.findIndex((c) => c.id === entry.id) : -1;
+    if (index >= 0) list[index] = used; else list.push(used);
+    markEditorDirty();
+    renderUsedCartridges();
+    $('#cartridge-dialog').close();
+    return;
+  }
+
+  // Stock: adding a kind that already exists just adds to its quantity.
+  const now = new Date().toISOString();
+  const quantity = clampInt($('#cartridge-quantity').value, 0, 9999, 0);
+  const lowStockAt = clampInt($('#cartridge-low').value, 0, 9999, DEFAULT_LOW_STOCK);
+  const duplicate = findStockMatch(result.value);
+  let item;
+  if (duplicate && duplicate.id !== entry?.id) {
+    if (entry) {
+      $('#cartridge-error').textContent = `${cartridgeCode(result.value)} from ${result.value.brand} is already in stock. Edit that item instead.`;
+      $('#cartridge-error').hidden = false;
+      return;
+    }
+    item = { ...duplicate, quantity: duplicate.quantity + quantity, lowStockAt, updatedAt: now };
+  } else {
+    item = { id: entry?.id ?? newId(), createdAt: entry?.createdAt ?? now, ...result.value, quantity, lowStockAt, updatedAt: now };
+  }
+  try {
+    await putRecord('cartridges', item);
+    requestPersistentStorage();
+    await reloadData();
+    $('#cartridge-dialog').close();
+    showToast(duplicate && !entry ? `Added ${quantity} to ${cartridgeCode(item)}` : 'Stock saved');
+    renderStock();
+  } catch (error) {
+    showToast(`Could not save: ${error.message}`);
+  }
+}
+
+async function deleteFromCartridgeDialog() {
+  const { mode, entry } = cartridgeDialogContext;
+  if (mode === 'use') {
+    state.editor.tattoo.cartridges = state.editor.tattoo.cartridges.filter((c) => c.id !== entry.id);
+    markEditorDirty();
+    renderUsedCartridges();
+    $('#cartridge-dialog').close();
+    return;
+  }
+  $('#cartridge-dialog').close();
+  const confirmed = await askConfirm({
+    title: `Delete ${cartridgeCode(entry)} ${entry.brand}?`,
+    message: 'The item is removed from your stock list. Tattoos that used it keep their record.',
+    confirmLabel: 'Delete',
+    danger: true,
+  });
+  if (!confirmed) return;
+  try {
+    await deleteRecord('cartridges', entry.id);
+    await reloadData();
+    renderStock();
+    showToast('Item deleted');
+  } catch (error) {
+    showToast(`Could not delete: ${error.message}`);
+  }
+}
+
+async function scanLabel(file) {
+  const box = $('#scan-box');
+  const status = $('#scan-status');
+  const preview = $('#scan-preview');
+  box.hidden = false;
+  $('#scan-details').hidden = true;
+  status.textContent = 'Reading label… the first time this can take a while.';
+  if (preview.src) URL.revokeObjectURL(preview.src);
+  preview.src = URL.createObjectURL(file);
+  preview.hidden = false;
+
+  try {
+    const text = await readLabelText(file);
+    const brands = rankValues((c) => c.brand, KNOWN_BRANDS).map(({ value }) => value);
+    const found = parseCartridgeLabel(text, brands);
+    $('#scan-text').textContent = text.trim() || '(no text found)';
+    $('#scan-details').hidden = false;
+    fillCartridgeForm(found);
+
+    const labels = { brand: 'brand', gauge: 'thickness', needleCount: 'needle count', config: 'type' };
+    const got = Object.keys(labels).filter((key) => found[key] !== undefined).map((key) => labels[key]);
+    const missed = Object.keys(labels).filter((key) => found[key] === undefined).map((key) => labels[key]);
+    status.textContent = got.length === 0
+      ? 'Nothing recognised. Try a sharper, closer photo, or fill it in by hand.'
+      : `Found ${got.join(', ')}.${missed.length ? ` Please add ${missed.join(', ')}.` : ' Please check before saving.'}`;
+  } catch (error) {
+    status.textContent = `Label reading failed: ${error.message} You can still fill it in by hand.`;
+  }
+}
+
+
+/* ---------- 11. Equipment (stock) ---------- */
+
+function renderStock() {
+  const items = [...state.cartridges].sort((a, b) =>
+    a.brand.localeCompare(b.brand) || a.config.localeCompare(b.config) || a.gauge - b.gauge || a.needleCount - b.needleCount);
+  const total = items.reduce((sum, item) => sum + item.quantity, 0);
+  const low = items.filter((item) => item.quantity <= item.lowStockAt);
+
+  $('#stock-summary').replaceChildren(
+    el('div', {}, el('strong', {}, String(total)), el('span', {}, 'cartridges')),
+    el('div', {}, el('strong', {}, String(items.length)), el('span', {}, 'kinds')),
+    el('div', {}, el('strong', { style: low.length ? 'color:var(--warn)' : '' }, String(low.length)), el('span', {}, 'running low')),
+  );
+
+  const list = $('#stock-list');
+  if (items.length === 0) {
+    list.replaceChildren(el('div', { class: 'empty' },
+      icon('box'),
+      el('h2', {}, 'No cartridges in stock'),
+      el('p', {}, 'Add each kind of cartridge you keep, by hand or by scanning the box label. Cartridges used on tattoos are then taken off automatically.'),
+    ));
+    return;
+  }
+
+  const rows = [];
+  let currentBrand = '';
+  for (const item of items) {
+    if (item.brand !== currentBrand) {
+      currentBrand = item.brand;
+      rows.push(el('h2', { class: 'month-heading' }, item.brand));
+    }
+    const isLow = item.quantity <= item.lowStockAt;
+    rows.push(el('div', { class: 'stock-row' },
+      el('button', { class: 'info', type: 'button', onclick: () => openCartridgeDialog({ mode: 'stock', entry: item }) },
+        el('span', { class: 'title' },
+          el('span', { class: 'code' }, cartridgeCode(item)),
+          isLow ? el('span', { class: 'badge low' }, item.quantity === 0 ? 'Out' : 'Low') : null),
+        el('span', { class: 'muted small' }, describeCartridge(item)),
+      ),
+      el('div', { class: 'stepper' },
+        el('button', { type: 'button', 'aria-label': `One fewer ${cartridgeCode(item)}`, onclick: () => changeStock(item, -1) }, '−'),
+        el('span', { class: 'qty', 'aria-label': 'In stock' }, String(item.quantity)),
+        el('button', { type: 'button', 'aria-label': `One more ${cartridgeCode(item)}`, onclick: () => changeStock(item, 1) }, '+'),
+      ),
+    ));
+  }
+  list.replaceChildren(...rows);
+}
+
+async function changeStock(item, change) {
+  try {
+    await runTransaction('cartridges', 'readwrite', (t) => adjustStockInTransaction(t, item.id, change));
+    await reloadData();
+    renderStock();
+  } catch (error) {
+    showToast(`Could not update stock: ${error.message}`);
+  }
+}
+
+
+/* ---------- 12. Backup ----------
+   A backup is one JSON file. Photos are stored inside it as text (base64).
+*/
+
+const BACKUP_FORMAT = 'equiTattoo-backup';
+const BACKUP_VERSION = 1;
+
+const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(blob);
+});
+
+const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
+
+async function renderBackupInfo() {
+  const photoCount = await runTransaction('photos', 'readonly', (t) => t.objectStore('photos').count()).catch(() => 0);
+  let usage = '';
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    if (estimate?.usage) usage = ` · about ${(estimate.usage / 1_048_576).toFixed(1)} MB used`;
+  } catch { /* not available */ }
+  $('#storage-usage').textContent =
+    `${state.tattoos.length} tattoos · ${photoCount} photos · ${state.cartridges.length} stock items${usage}`;
+}
+
+async function exportBackup() {
+  const button = $('#export-button');
+  button.disabled = true;
+  showToast('Preparing backup…');
+  try {
+    const [tattoos, cartridges, photos] = await Promise.all([getAll('tattoos'), getAll('cartridges'), getAll('photos')]);
+    const backup = {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      cartridges,
+      tattoos: await Promise.all(tattoos.map(async ({ coverThumb, ...tattoo }) =>
+        ({ ...tattoo, coverThumb: coverThumb ? await blobToDataUrl(coverThumb) : null }))),
+      photos: await Promise.all(photos.map(async (photo) =>
+        ({ ...photo, image: await blobToDataUrl(photo.image), thumb: await blobToDataUrl(photo.thumb) }))),
+    };
+    const file = new File([JSON.stringify(backup)], `equiTattoo-backup-${todayIso()}.json`, { type: 'application/json' });
+
+    // On phones the share sheet lets you save to Files / Drive; elsewhere, download.
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'equiTattoo backup' });
+    } else {
+      const url = URL.createObjectURL(file);
+      const link = el('a', { href: url, download: file.name });
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    }
+    showToast('Backup ready');
+  } catch (error) {
+    if (error.name !== 'AbortError') showToast(`Backup failed: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function importBackup(file) {
+  let backup;
+  try {
+    backup = JSON.parse(await file.text());
+  } catch {
+    showToast('This file is not an equiTattoo backup.');
+    return;
+  }
+  if (backup?.format !== BACKUP_FORMAT || !Array.isArray(backup.tattoos)) {
+    showToast('This file is not an equiTattoo backup.');
+    return;
+  }
+  if (backup.version > BACKUP_VERSION) {
+    showToast('This backup was made by a newer version of the app. Update the app first.');
+    return;
+  }
+  const confirmed = await askConfirm({
+    title: 'Restore this backup?',
+    message: `${backup.tattoos.length} tattoos, ${backup.photos?.length ?? 0} photos and ${backup.cartridges?.length ?? 0} stock items will be added to this device.`,
+    confirmLabel: 'Restore',
+  });
+  if (!confirmed) return;
+
+  try {
+    showToast('Restoring…');
+    // Convert all photos first: a database transaction cannot wait for other work.
+    const tattoos = await Promise.all(backup.tattoos.map(async (tattoo) =>
+      ({ ...tattoo, cartridges: tattoo.cartridges ?? [], coverThumb: tattoo.coverThumb ? await dataUrlToBlob(tattoo.coverThumb) : null })));
+    const photos = await Promise.all((backup.photos ?? []).map(async (photo) =>
+      ({ ...photo, image: await dataUrlToBlob(photo.image), thumb: await dataUrlToBlob(photo.thumb) })));
+    await runTransaction(['tattoos', 'photos', 'cartridges'], 'readwrite', (t) => {
+      tattoos.forEach((record) => t.objectStore('tattoos').put(record));
+      photos.forEach((record) => t.objectStore('photos').put(record));
+      (backup.cartridges ?? []).forEach((record) => t.objectStore('cartridges').put(record));
+    });
+    await reloadData();
+    requestPersistentStorage();
+    renderBackupInfo();
+    showToast('Backup restored');
+  } catch (error) {
+    showToast(`Restore failed: ${error.message}`);
+  }
+}
+
+
+/* ---------- 13. Start-up ---------- */
+
+async function reloadData() {
+  [state.tattoos, state.cartridges] = await Promise.all([getAll('tattoos'), getAll('cartridges')]);
+}
+
+function bindStepper(stepper) {
+  const input = $(`#${stepper.dataset.stepperFor}`);
+  stepper.querySelectorAll('button[data-step]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const current = clampInt(input.value, min, max, min);
+      input.value = String(Math.min(max, Math.max(min, current + Number(button.dataset.step))));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+}
+
+function bindEvents() {
+  document.querySelectorAll('.tabbar button').forEach((button) =>
+    button.addEventListener('click', () => showTab(button.dataset.tab)));
+  $('#back-button').addEventListener('click', leaveEditor);
+  $('#fab').addEventListener('click', () => {
+    if (state.tab === 'equipment') openCartridgeDialog({ mode: 'stock' });
+    else openEditor(null);
+  });
+  $('#tattoo-search').addEventListener('input', renderTattooList);
+
+  // Editor
+  $('#tattoo-form').addEventListener('submit', saveEditor);
+  $('#tattoo-form').addEventListener('input', markEditorDirty);
+  $('#tattoo-date').addEventListener('change', () => state.editor && renderEditorPhotos());
+  $('#delete-tattoo').addEventListener('click', deleteEditorTattoo);
+  $('#add-used-by-hand').addEventListener('click', () => openCartridgeDialog({ mode: 'use' }));
+  $('#add-used-by-photo').addEventListener('click', () => openCartridgeDialog({ mode: 'use', scan: true }));
+
+  // Cartridge pop-up
+  $('#cartridge-form').addEventListener('submit', submitCartridgeDialog);
+  $('#cartridge-cancel').addEventListener('click', () => $('#cartridge-dialog').close());
+  $('#cartridge-delete').addEventListener('click', deleteFromCartridgeDialog);
+  $('#cartridge-scan').addEventListener('click', () => $('#scan-input').click());
+  $('#scan-input').addEventListener('change', (event) => {
+    const [file] = event.target.files;
+    event.target.value = '';
+    if (file) scanLabel(file);
+  });
+  for (const id of ['#cartridge-brand', '#cartridge-config', '#cartridge-count']) {
+    $(id).addEventListener('input', renderCartridgeChips);
+  }
+  $('#cartridge-dialog').addEventListener('close', () => {
+    const preview = $('#scan-preview');
+    if (preview.src) URL.revokeObjectURL(preview.src);
+    preview.removeAttribute('src');
+  });
+  document.querySelectorAll('[data-stepper-for]').forEach(bindStepper);
+
+  // Backup
+  $('#export-button').addEventListener('click', exportBackup);
+  $('#import-input').addEventListener('change', (event) => {
+    const [file] = event.target.files;
+    event.target.value = '';
+    if (file) importBackup(file);
+  });
+}
+
+async function start() {
+  bindEvents();
+  try {
+    db = await openDatabase();
+    await reloadData();
+  } catch (error) {
+    const banner = $('#storage-banner');
+    banner.textContent = `This browser does not allow the app to save data here (${error.message}). Open the app file directly in Safari or Chrome.`;
+    banner.hidden = false;
+    $('#fab').hidden = true;
+    return;
+  }
+  showTab('tattoos');
+}
+
+start();
+</script>
