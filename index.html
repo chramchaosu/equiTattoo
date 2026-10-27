@@ -158,6 +158,16 @@
   textarea.input { min-height: 84px; resize: vertical; }
   .input[aria-invalid="true"] { border-color: var(--danger); }
   .field-error { color: var(--danger); font-size: 0.88rem; }
+
+  /* Date boxes: the phone's own date picker sits invisibly on top of a box
+     that shows the date as DD/MM/YYYY, whatever the phone's region setting. */
+  .date-field { position: relative; }
+  .date-display { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+  .date-field input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; border: 0; padding: 0;
+  }
+  .date-field:focus-within .date-display { outline: 3px solid var(--stencil); outline-offset: 2px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
   .row > .field { flex: 1 1 140px; }
 
@@ -350,7 +360,10 @@
         <div class="row">
           <div class="field">
             <label for="tattoo-date">Date</label>
-            <input class="input" id="tattoo-date" type="date" required>
+            <div class="date-field">
+              <span class="input date-display" aria-hidden="true"></span>
+              <input id="tattoo-date" type="date" required>
+            </div>
           </div>
           <div class="field" style="flex-grow:2">
             <label for="tattoo-client">Client name</label>
@@ -521,7 +534,10 @@
     <img class="photo-full" id="photo-full" alt="">
     <div class="field">
       <label for="photo-time">Taken</label>
-      <input class="input" id="photo-time" type="datetime-local">
+      <div class="date-field">
+        <span class="input date-display" aria-hidden="true"></span>
+        <input id="photo-time" type="datetime-local">
+      </div>
     </div>
     <div class="dialog-actions">
       <button class="button danger quiet" type="button" id="photo-delete">Delete photo</button>
@@ -673,11 +689,31 @@ function parseIsoDate(isoDate) {
   return new Date(year, month - 1, day);
 }
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
-const stampFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-const formatDate = (isoDate) => dateFormat.format(parseIsoDate(isoDate));
+/** Dates are always shown as DD/MM/YYYY, and times as HH:MM (24-hour). */
+const formatDayMonthYear = (date) => `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
+const formatDate = (isoDate) => formatDayMonthYear(parseIsoDate(isoDate));
+const formatDateTime = (date) => `${formatDayMonthYear(date)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+
+/** Updates the DD/MM/YYYY text shown in front of a date or date-and-time picker. */
+function refreshDateDisplay(input) {
+  const display = input.closest('.date-field').querySelector('.date-display');
+  if (!input.value) display.textContent = input.type === 'date' ? 'DD/MM/YYYY' : 'DD/MM/YYYY HH:MM';
+  else if (input.type === 'date') display.textContent = formatDate(input.value);
+  else display.textContent = formatDateTime(new Date(input.value));
+  display.classList.toggle('muted', !input.value);
+}
+
+function bindDateField(input) {
+  input.addEventListener('input', () => refreshDateDisplay(input));
+  input.addEventListener('change', () => refreshDateDisplay(input));
+  // Computers only open the calendar from its small icon, which is hidden here.
+  input.addEventListener('click', () => {
+    try { input.showPicker?.(); } catch { /* already open, or not allowed */ }
+  });
+  refreshDateDisplay(input);
+}
 
 function daysBetween(fromIsoDate, toDate) {
   const from = parseIsoDate(fromIsoDate);
@@ -1200,6 +1236,7 @@ async function openEditor(tattooId) {
   $('#tattoo-client').removeAttribute('aria-invalid');
 
   $('#tattoo-date').value = tattoo.date;
+  refreshDateDisplay($('#tattoo-date'));
   $('#tattoo-client').value = tattoo.clientName;
   $('#tattoo-description').value = tattoo.description ?? '';
   $('#tattoo-notes').value = tattoo.notes ?? '';
@@ -1286,7 +1323,7 @@ function renderEditorPhotos() {
 
 function photoCaption(photo) {
   const taken = new Date(photo.takenAt);
-  const stamp = stampFormat.format(taken);
+  const stamp = formatDateTime(taken);
   if (photo.kind !== 'healed') return stamp;
   const days = daysBetween($('#tattoo-date').value || todayIso(), taken);
   return days > 0 ? `${stamp} · day ${days}` : stamp;
@@ -1320,6 +1357,7 @@ function openPhotoDialog(photo) {
   const url = URL.createObjectURL(photo.image);
   $('#photo-full').src = url;
   $('#photo-time').value = toLocalInputValue(new Date(photo.takenAt));
+  refreshDateDisplay($('#photo-time'));
 
   $('#photo-done').onclick = () => {
     const value = $('#photo-time').value;
@@ -1882,6 +1920,7 @@ function bindEvents() {
   $('#tattoo-form').addEventListener('submit', saveEditor);
   $('#tattoo-form').addEventListener('input', markEditorDirty);
   $('#tattoo-date').addEventListener('change', () => state.editor && renderEditorPhotos());
+  document.querySelectorAll('.date-field input').forEach(bindDateField);
   $('#delete-tattoo').addEventListener('click', deleteEditorTattoo);
   $('#add-used-by-hand').addEventListener('click', () => openCartridgeDialog({ mode: 'use' }));
   $('#add-used-by-photo').addEventListener('click', () => openCartridgeDialog({ mode: 'use', scan: true }));
