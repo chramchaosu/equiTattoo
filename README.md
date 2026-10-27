@@ -5,6 +5,16 @@ The whole app is one file, `index.html`. It needs no server, no build step and n
 
 ## What it does
 
+**Gallery** (for showing work to clients)
+- One photo per tattoo (latest healed photo, else latest finished photo), no names or dates. Tattoos without a finished or healed photo are left out.
+- Tapping a photo opens a full-screen viewer; swipe (or use the arrows / arrow keys) to move between photos.
+- **Details** opens the tattoo's page, after entering the gallery PIN.
+- With a PIN set, the gallery is locked: the tab bar is hidden and leaving needs the PIN (also after reloading the page).
+
+**Artist**
+- Set, change or remove the gallery PIN (4–8 digits). The PIN is stored per device as a salted SHA-256 hash in the `settings` store and is never part of a backup. After 5 wrong tries, entry pauses for 30 seconds. It keeps clients out of the artist's pages; it is not encryption.
+- Backup (see below).
+
 **Tattoos**
 - Each tattoo has a date and the client's name (both required), plus an optional description and notes.
 - Optional client questions: age group (15–24, 25–34, 35–44, 45–54, 55–64, 65–99+) and gender.
@@ -25,13 +35,14 @@ The whole app is one file, `index.html`. It needs no server, no build step and n
 
 `index.html` contains, in order: page styles (colour tokens at the top, with a dark theme), the page structure,
 and one script split into numbered sections (fixed lists, helpers, database, photos, label reading,
-statistics, screens, tattoo list, tattoo editor, cartridge pop-up, equipment, backup, start-up).
+statistics, screens with the client gallery and PIN, tattoo list, tattoo editor, cartridge pop-up, equipment, backup, start-up).
 
-Data model (IndexedDB database `equiTattoo`, version 1):
+Data model (IndexedDB database `equiTattoo`, version 2):
 
 | Store        | Record |
 |--------------|--------|
-| `tattoos`    | `{ id, date, clientName, description, ageGroup, gender, notes, cartridges[], coverThumb, createdAt, updatedAt }` |
+| `tattoos`    | `{ id, date, clientName, description, ageGroup, gender, notes, cartridges[], coverPhotoId, coverKind, coverThumb, createdAt, updatedAt }` |
+| `settings`   | `{ key, ... }` — this device only, not in backups (currently `galleryPin: { salt, hash }`) |
 | `photos`     | `{ id, tattooId, kind: 'reference' \| 'stencil' \| 'finished' \| 'healed', takenAt, image, thumb, addedAt }` |
 | `cartridges` | `{ id, brand, gauge, needleCount, config, quantity, lowStockAt, createdAt, updatedAt }` |
 

@@ -100,7 +100,7 @@
 
   .tabbar {
     position: fixed; inset: auto 0 0; z-index: 5;
-    display: grid; grid-template-columns: repeat(3, 1fr);
+    display: grid; grid-template-columns: repeat(4, 1fr);
     background: var(--surface); border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
@@ -278,9 +278,56 @@
   .check { display: flex; gap: 10px; align-items: center; cursor: pointer; }
   .check input { width: 22px; height: 22px; accent-color: var(--stencil); }
 
+  /* ---------- Gallery ---------- */
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 4px; }
+  .gallery-tile {
+    aspect-ratio: 1; max-width: 100%; padding: 0; border: 0; border-radius: 6px; overflow: hidden;
+    background: var(--sunken); cursor: zoom-in;
+  }
+  .gallery-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* The viewer is always black, like a phone's photo app, in light and dark mode. */
+  dialog.viewer {
+    width: 100%; height: 100%; max-width: none; max-height: none; margin: 0;
+    border-radius: 0; background: #000; color: #fff; box-shadow: none;
+  }
+  dialog.viewer::backdrop { background: #000; }
+  .viewer-track {
+    display: flex; height: 100%; overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; overscroll-behavior: contain; scrollbar-width: none;
+  }
+  .viewer-track::-webkit-scrollbar { display: none; }
+  .viewer-slide { flex: 0 0 100%; height: 100%; scroll-snap-align: center; scroll-snap-stop: always; display: grid; place-items: center; }
+  .viewer-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .viewer-bar {
+    position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 12px;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+  .viewer-top {
+    top: 0; justify-content: space-between;
+    padding-block: calc(8px + env(safe-area-inset-top, 0px)) 8px;
+    background: linear-gradient(rgb(0 0 0 / 0.55), transparent);
+  }
+  .viewer-bottom {
+    bottom: 0; justify-content: center;
+    padding-block: 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.55));
+  }
+  .viewer-count { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .viewer .icon-button { color: #fff; background: rgb(0 0 0 / 0.35); }
+  .viewer-bottom .button { background: rgb(255 255 255 / 0.14); border-color: rgb(255 255 255 / 0.3); color: #fff; }
+  .viewer-nav { position: absolute; top: 50%; translate: 0 -50%; }
+  .viewer-nav.prev { left: max(12px, env(safe-area-inset-left, 0px)); }
+  .viewer-nav.next { right: max(12px, env(safe-area-inset-right, 0px)); }
+  @media (hover: none) { .viewer-nav { display: none; } }
+
+  .pin-input { font-size: 1.4rem; letter-spacing: 0.4em; text-align: center; font-family: var(--font-code); }
+
+  /* A "popover", so it also shows on top of open pop-ups like the photo viewer. */
   .toast {
-    position: fixed; left: 50%; translate: -50% 0; z-index: 20;
-    bottom: calc(var(--tabbar-height) + 84px + env(safe-area-inset-bottom, 0px));
+    position: fixed; margin: 0; border: 0; translate: -50% 0; z-index: 20;
+    inset: auto auto calc(var(--tabbar-height) + 84px + env(safe-area-inset-bottom, 0px)) 50%;
     background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px;
     font-weight: 700; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center;
   }
@@ -300,6 +347,10 @@
     <symbol id="icon-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
     <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
     <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="icon-artist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></symbol>
+    <symbol id="icon-next" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
     <symbol id="icon-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></symbol>
   </defs>
 </svg>
@@ -308,13 +359,20 @@
   <button class="icon-button" id="back-button" type="button" aria-label="Back" hidden><svg><use href="#icon-back"/></svg></button>
   <h1 id="screen-title">Tattoos</h1>
   <span class="wordmark">equiTattoo</span>
+  <button class="icon-button" id="gallery-exit" type="button" aria-label="Leave the gallery (needs PIN)" hidden><svg><use href="#icon-lock"/></svg></button>
 </header>
 
 <main>
   <div class="banner" id="storage-banner" hidden></div>
 
-  <!-- Screen 1: list of tattoos -->
-  <section class="view" id="view-tattoos" aria-labelledby="screen-title">
+  <!-- Screen: gallery for clients. One photo per tattoo, no names or dates. -->
+  <section class="view" id="view-gallery" hidden>
+    <p class="note warn" id="gallery-hint" style="margin:0" hidden>No PIN is set, so anyone can leave this gallery. Set one on the Artist tab.</p>
+    <div class="gallery-grid" id="gallery-grid"></div>
+  </section>
+
+  <!-- Screen: list of tattoos -->
+  <section class="view" id="view-tattoos" hidden>
     <div class="search">
       <svg><use href="#icon-search"/></svg>
       <input class="input" id="tattoo-search" type="search" placeholder="Search by client or tattoo" autocomplete="off" aria-label="Search tattoos">
@@ -322,14 +380,23 @@
     <div id="tattoo-list" class="list"></div>
   </section>
 
-  <!-- Screen 2: cartridge stock -->
+  <!-- Screen: cartridge stock -->
   <section class="view" id="view-equipment" hidden>
     <div class="summary" id="stock-summary"></div>
     <div id="stock-list" class="list"></div>
   </section>
 
-  <!-- Screen 3: backup -->
-  <section class="view" id="view-backup" hidden>
+  <!-- Screen: artist settings (gallery PIN) and backup -->
+  <section class="view" id="view-artist" hidden>
+    <div class="panel">
+      <h2>Gallery PIN</h2>
+      <p class="muted" id="pin-status" style="margin:0"></p>
+      <p class="small muted" style="margin:0">The PIN is kept on this device only and is not part of backups. Set it again on each phone or tablet you use.</p>
+      <div class="backup-actions">
+        <button class="button primary" id="pin-set" type="button"><svg><use href="#icon-lock"/></svg><span id="pin-set-label">Set PIN</span></button>
+        <button class="button danger" id="pin-remove" type="button">Remove PIN</button>
+      </div>
+    </div>
     <div class="panel">
       <h2>Where your data lives</h2>
       <p class="muted" style="margin:0">Everything is saved only on this device, inside this browser. If you clear the browser's website data, or lose the phone, it is gone. Save a backup file regularly and keep it somewhere safe, for example in iCloud Drive or Google Drive.</p>
@@ -434,9 +501,10 @@
 <button class="button primary fab" id="fab" type="button"><svg><use href="#icon-plus"/></svg><span id="fab-label">New tattoo</span></button>
 
 <nav class="tabbar" aria-label="Sections">
+  <button type="button" data-tab="gallery"><svg><use href="#icon-grid"/></svg>Gallery</button>
   <button type="button" data-tab="tattoos" aria-current="page"><svg><use href="#icon-tattoo"/></svg>Tattoos</button>
   <button type="button" data-tab="equipment"><svg><use href="#icon-box"/></svg>Equipment</button>
-  <button type="button" data-tab="backup"><svg><use href="#icon-save"/></svg>Backup</button>
+  <button type="button" data-tab="artist"><svg><use href="#icon-artist"/></svg>Artist</button>
 </nav>
 
 <!-- Pop-up: add or edit a cartridge (used on a tattoo, or kept in stock) -->
@@ -547,6 +615,44 @@
   </div>
 </dialog>
 
+<!-- Full-screen photo viewer for the gallery. Swipe left and right. -->
+<dialog id="viewer" class="viewer" aria-label="Tattoo photos">
+  <div class="viewer-track" id="viewer-track"></div>
+  <div class="viewer-bar viewer-top">
+    <span id="viewer-count" class="viewer-count"></span>
+    <button class="icon-button" id="viewer-close" type="button" aria-label="Close"><svg><use href="#icon-close"/></svg></button>
+  </div>
+  <button class="icon-button viewer-nav prev" id="viewer-prev" type="button" aria-label="Previous photo"><svg><use href="#icon-back"/></svg></button>
+  <button class="icon-button viewer-nav next" id="viewer-next" type="button" aria-label="Next photo"><svg><use href="#icon-next"/></svg></button>
+  <div class="viewer-bar viewer-bottom">
+    <button class="button" id="viewer-details" type="button"><svg><use href="#icon-lock"/></svg>Details</button>
+  </div>
+</dialog>
+
+<!-- Pop-up: enter, set or remove the gallery PIN -->
+<dialog id="pin-dialog" aria-labelledby="pin-title">
+  <form class="dialog-body" id="pin-form" novalidate>
+    <h2 id="pin-title">Enter PIN</h2>
+    <div class="field" id="pin-current-field">
+      <label for="pin-current" id="pin-current-label">PIN</label>
+      <input class="input pin-input" id="pin-current" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+    </div>
+    <div class="field" id="pin-new-field">
+      <label for="pin-new">New PIN (4–8 digits)</label>
+      <input class="input pin-input" id="pin-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8">
+    </div>
+    <div class="field" id="pin-repeat-field">
+      <label for="pin-repeat">Repeat new PIN</label>
+      <input class="input pin-input" id="pin-repeat" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8">
+    </div>
+    <div class="field-error" id="pin-error" role="alert" hidden></div>
+    <div class="dialog-actions">
+      <button class="button" type="button" id="pin-cancel">Cancel</button>
+      <button class="button primary" type="submit" id="pin-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Pop-up: "are you sure?" -->
 <dialog id="confirm-dialog" aria-labelledby="confirm-title">
   <div class="dialog-body">
@@ -559,7 +665,7 @@
   </div>
 </dialog>
 
-<div class="toast" id="toast" role="status" hidden></div>
+<div class="toast" id="toast" role="status" popover="manual" hidden></div>
 
 <script>
 'use strict';
@@ -577,7 +683,7 @@
      4. Photos (shrinking and storing)
      5. Reading cartridge labels from a photo
      6. Cartridge statistics ("most used")
-     7. Screens and navigation
+     7. Screens and navigation, client gallery, gallery PIN
      8. Tattoo list
      9. Tattoo editor
     10. Cartridge pop-up
@@ -734,8 +840,17 @@ function showToast(message) {
   const toast = $('#toast');
   toast.textContent = message;
   toast.hidden = false;
+  const canPopOver = typeof toast.showPopover === 'function';
+  if (canPopOver) {
+    // Showing it again moves it above anything opened since (e.g. the photo viewer).
+    if (toast.matches(':popover-open')) toast.hidePopover();
+    toast.showPopover();
+  }
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+  toastTimer = setTimeout(() => {
+    if (canPopOver && toast.matches(':popover-open')) toast.hidePopover();
+    toast.hidden = true;
+  }, 2600);
 }
 
 /** In-page "are you sure?" question. Resolves to true or false. */
@@ -764,7 +879,7 @@ function askConfirm({ title, message, confirmLabel = 'OK', danger = false }) {
 
 // Pictures shown on screen use temporary "object URLs". They are freed when
 // the screen showing them is redrawn, so memory does not keep growing.
-const objectUrls = { list: [], editor: [] };
+const objectUrls = { list: [], editor: [], gallery: [], viewer: [] };
 function trackUrl(group, blob) {
   const url = URL.createObjectURL(blob);
   objectUrls[group].push(url);
@@ -781,13 +896,16 @@ function releaseUrls(group) {
      cartridges  stock items: { id, brand, gauge, needleCount, config, quantity, lowStockAt, ... }
      tattoos     { id, date, clientName, description, ageGroup, gender, notes,
                    cartridges: [{ id, brand, gauge, needleCount, config, count, stockId }],
-                   coverThumb, createdAt, updatedAt }
+                   coverPhotoId, coverKind, coverThumb, createdAt, updatedAt }
+                 The "cover" is the photo shown in the list and the gallery.
      photos      { id, tattooId, kind, takenAt, image, thumb, addedAt }
                  kind is one of PHOTO_KINDS: reference, stencil, finished, healed
+     settings    { key, ... } settings for this device only, never in backups
+                 (added in version 2; holds the gallery PIN)
 */
 
 const DB_NAME = 'equiTattoo';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let db = null;
 
 function openDatabase() {
@@ -803,6 +921,9 @@ function openDatabase() {
       }
       if (!database.objectStoreNames.contains('photos')) {
         database.createObjectStore('photos', { keyPath: 'id' }).createIndex('tattooId', 'tattooId');
+      }
+      if (!database.objectStoreNames.contains('settings')) {
+        database.createObjectStore('settings', { keyPath: 'key' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -836,6 +957,16 @@ const getAll = (storeName) =>
 
 const getPhotosForTattoo = (tattooId) =>
   runTransaction('photos', 'readonly', (t) => t.objectStore('photos').index('tattooId').getAll(tattooId));
+
+const getRecord = (storeName, id) =>
+  runTransaction(storeName, 'readonly', (t) => t.objectStore(storeName).get(id));
+
+/** Loads several records at once, in the order of `ids`. */
+const getRecords = (storeName, ids) =>
+  runTransaction(storeName, 'readonly', (t) => {
+    const store = t.objectStore(storeName);
+    return ids.map((id) => store.get(id));
+  }).then((requests) => requests.map((request) => request.result));
 
 const putRecord = (storeName, record) =>
   runTransaction(storeName, 'readwrite', (t) => { t.objectStore(storeName).put(record); });
@@ -1110,31 +1241,287 @@ const state = {
   cartridges: [],
   tab: 'tattoos',
   editor: null,   // the tattoo being edited, see openEditor()
+  pin: null,      // the stored gallery PIN record, or null when no PIN is set
 };
 
-const TAB_TITLES = { tattoos: 'Tattoos', equipment: 'Equipment', backup: 'Backup' };
+const TAB_TITLES = { gallery: 'Gallery', tattoos: 'Tattoos', equipment: 'Equipment', artist: 'Artist' };
+const VIEW_NAMES = ['gallery', 'tattoos', 'equipment', 'artist', 'editor'];
+
+// While the gallery is shown to a client with a PIN set, the tab bar is hidden
+// and leaving needs the PIN. This is remembered, so reloading the page doesn't unlock it.
+const GALLERY_LOCK_KEY = 'equiTattoo.galleryLocked';
+
+function rememberGalleryLock(locked) {
+  try {
+    if (locked) localStorage.setItem(GALLERY_LOCK_KEY, '1');
+    else localStorage.removeItem(GALLERY_LOCK_KEY);
+  } catch { /* storage blocked; the lock then only lasts until the page reloads */ }
+}
+
+function wasGalleryLocked() {
+  try { return localStorage.getItem(GALLERY_LOCK_KEY) === '1'; } catch { return false; }
+}
+
+function showView(name) {
+  for (const view of VIEW_NAMES) $(`#view-${view}`).hidden = view !== name;
+}
 
 function showTab(tab) {
   state.tab = tab;
   state.editor = null;
   releaseUrls('editor');
-  for (const name of ['tattoos', 'equipment', 'backup', 'editor']) {
-    $(`#view-${name}`).hidden = name !== tab;
-  }
+  showView(tab);
   document.querySelectorAll('.tabbar button').forEach((button) => {
     if (button.dataset.tab === tab) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
-  $('.tabbar').hidden = false;
+
+  const locked = tab === 'gallery' && Boolean(state.pin);
+  rememberGalleryLock(locked);
+  $('.tabbar').hidden = locked;
+  $('#gallery-exit').hidden = !locked;
   $('#back-button').hidden = true;
   $('#screen-title').textContent = TAB_TITLES[tab];
-  $('#fab').hidden = tab === 'backup';
+  $('#fab').hidden = tab !== 'tattoos' && tab !== 'equipment';
   $('#fab-label').textContent = tab === 'equipment' ? 'Add cartridges' : 'New tattoo';
 
+  if (tab === 'gallery') renderGallery();
   if (tab === 'tattoos') renderTattooList();
   if (tab === 'equipment') renderStock();
-  if (tab === 'backup') renderBackupInfo();
+  if (tab === 'artist') {
+    renderPinStatus();
+    renderBackupInfo();
+  }
   window.scrollTo(0, 0);
+}
+
+
+/* ---------- Gallery (shown to clients) ----------
+   One photo per tattoo, only finished or healed work, newest first, no details.
+*/
+
+const GALLERY_KINDS = ['healed', 'finished'];
+
+function galleryTattoos() {
+  return state.tattoos
+    .filter((tattoo) => tattoo.coverPhotoId && GALLERY_KINDS.includes(tattoo.coverKind))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
+function renderGallery() {
+  releaseUrls('gallery');
+  $('#gallery-hint').hidden = Boolean(state.pin);
+  const tattoos = galleryTattoos();
+  const grid = $('#gallery-grid');
+  if (tattoos.length === 0) {
+    grid.replaceChildren(el('div', { class: 'empty', style: 'grid-column:1/-1' },
+      icon('grid'),
+      el('h2', {}, 'No photos yet'),
+      el('p', {}, 'A photo of each tattoo appears here as soon as it has a finished or healed photo.'),
+    ));
+    return;
+  }
+  grid.replaceChildren(...tattoos.map((tattoo, index) =>
+    el('button', { class: 'gallery-tile', type: 'button', 'aria-label': `Open photo ${index + 1}`, onclick: () => openViewer(index) },
+      el('img', { src: trackUrl('gallery', tattoo.coverThumb), alt: '', loading: 'lazy' }))));
+}
+
+const viewer = { tattoos: [], index: 0 };
+
+async function openViewer(startIndex) {
+  const tattoos = galleryTattoos();
+  let photos;
+  try {
+    photos = await getRecords('photos', tattoos.map((tattoo) => tattoo.coverPhotoId));
+  } catch (error) {
+    showToast(`Photos could not be loaded: ${error.message}`);
+    return;
+  }
+  releaseUrls('viewer');
+  viewer.tattoos = tattoos;
+  const track = $('#viewer-track');
+  track.replaceChildren(...tattoos.map((tattoo, index) => {
+    // Fall back to the small picture if the full photo is missing.
+    const image = photos[index]?.image ?? tattoo.coverThumb;
+    return el('div', { class: 'viewer-slide' },
+      el('img', { src: trackUrl('viewer', image), alt: `Tattoo photo ${index + 1} of ${tattoos.length}`, loading: 'lazy', decoding: 'async' }));
+  }));
+
+  $('#viewer').showModal();
+  // Jump straight to the tapped photo, without a scrolling animation.
+  track.scrollTo({ left: startIndex * track.clientWidth, behavior: 'instant' });
+  setViewerIndex(startIndex);
+}
+
+function setViewerIndex(index) {
+  viewer.index = Math.min(viewer.tattoos.length - 1, Math.max(0, index));
+  $('#viewer-count').textContent = `${viewer.index + 1} / ${viewer.tattoos.length}`;
+  $('#viewer-prev').disabled = viewer.index === 0;
+  $('#viewer-next').disabled = viewer.index === viewer.tattoos.length - 1;
+}
+
+function stepViewer(change) {
+  const track = $('#viewer-track');
+  track.scrollTo({ left: (viewer.index + change) * track.clientWidth, behavior: 'smooth' });
+}
+
+async function openViewerDetails() {
+  const tattoo = viewer.tattoos[viewer.index];
+  if (!tattoo) return;
+  if (!state.pin) {
+    showToast('Set a PIN on the Artist tab first.');
+    return;
+  }
+  if (!(await askPin('Enter PIN to see details'))) return;
+  $('#viewer').close();
+  rememberGalleryLock(false);
+  openEditor(tattoo.id);
+}
+
+async function leaveGallery() {
+  if (await askPin('Enter PIN to leave the gallery')) showTab('tattoos');
+}
+
+
+/* ---------- Gallery PIN ----------
+   The PIN keeps clients out of the artist's pages. It is stored on this device
+   only, as a salted SHA-256 hash, and is not included in backups.
+   Note: it is a lock against curious clients, not encryption of the data.
+*/
+
+const PIN_SETTING_KEY = 'galleryPin';
+const PIN_PATTERN = /^\d{4,8}$/;
+const PIN_MAX_TRIES = 5;
+const PIN_LOCKOUT_MS = 30_000;
+const pinGuard = { failures: 0, lockedUntil: 0 };
+
+async function hashPin(pin, salt) {
+  const data = new TextEncoder().encode(`${salt}:${pin}`);
+  if (!crypto.subtle) return `plain:${pin}`; // only on pages browsers consider insecure
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function loadPin() {
+  try {
+    state.pin = (await getRecord('settings', PIN_SETTING_KEY)) ?? null;
+  } catch {
+    state.pin = null;
+  }
+}
+
+/** Checks a PIN, with a 30-second pause after 5 wrong tries. Returns null if right, else a message. */
+async function checkPin(pin) {
+  const waitMs = pinGuard.lockedUntil - Date.now();
+  if (waitMs > 0) return `Too many wrong tries. Wait ${Math.ceil(waitMs / 1000)} seconds.`;
+  if (state.pin && (await hashPin(pin, state.pin.salt)) === state.pin.hash) {
+    pinGuard.failures = 0;
+    return null;
+  }
+  pinGuard.failures += 1;
+  if (pinGuard.failures >= PIN_MAX_TRIES) {
+    pinGuard.failures = 0;
+    pinGuard.lockedUntil = Date.now() + PIN_LOCKOUT_MS;
+    return 'Too many wrong tries. Wait 30 seconds.';
+  }
+  return 'Wrong PIN.';
+}
+
+/**
+ * Opens the PIN pop-up.
+ *   mode 'unlock' — enter the PIN
+ *   mode 'set'    — choose a new PIN (asks for the current one if there is one)
+ *   mode 'remove' — enter the PIN to remove it
+ * Resolves to true when the action succeeded.
+ */
+function openPinDialog({ mode, title }) {
+  const dialog = $('#pin-dialog');
+  const form = $('#pin-form');
+  const error = $('#pin-error');
+  const needsCurrent = mode !== 'set' || Boolean(state.pin);
+  $('#pin-title').textContent = title;
+  $('#pin-current-label').textContent = mode === 'unlock' ? 'PIN' : 'Current PIN';
+  $('#pin-current-field').hidden = !needsCurrent;
+  $('#pin-new-field').hidden = mode !== 'set';
+  $('#pin-repeat-field').hidden = mode !== 'set';
+  $('#pin-ok').textContent = { unlock: 'Unlock', set: 'Save PIN', remove: 'Remove PIN' }[mode];
+  form.querySelectorAll('input').forEach((input) => { input.value = ''; });
+  error.hidden = true;
+
+  return new Promise((resolve) => {
+    let succeeded = false;
+    const showError = (message) => {
+      error.textContent = message;
+      error.hidden = false;
+    };
+
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      if (needsCurrent) {
+        const problem = await checkPin($('#pin-current').value);
+        if (problem) {
+          $('#pin-current').value = '';
+          return showError(problem);
+        }
+      }
+      if (mode === 'set') {
+        const pin = $('#pin-new').value;
+        if (!PIN_PATTERN.test(pin)) return showError('The new PIN must be 4 to 8 digits.');
+        if (pin !== $('#pin-repeat').value) return showError('The two new PINs are not the same.');
+        const salt = newId();
+        const record = { key: PIN_SETTING_KEY, salt, hash: await hashPin(pin, salt), updatedAt: new Date().toISOString() };
+        try {
+          await putRecord('settings', record);
+          state.pin = record;
+        } catch (saveError) {
+          return showError(`Could not save the PIN: ${saveError.message}`);
+        }
+      }
+      if (mode === 'remove') {
+        try {
+          await deleteRecord('settings', PIN_SETTING_KEY);
+          state.pin = null;
+        } catch (deleteError) {
+          return showError(`Could not remove the PIN: ${deleteError.message}`);
+        }
+      }
+      succeeded = true;
+      dialog.close();
+    };
+    $('#pin-cancel').onclick = () => dialog.close();
+    dialog.onclose = () => {
+      form.onsubmit = null;
+      dialog.onclose = null;
+      resolve(succeeded);
+    };
+    dialog.showModal();
+    (needsCurrent ? $('#pin-current') : $('#pin-new')).focus();
+  });
+}
+
+const askPin = (title) => openPinDialog({ mode: 'unlock', title });
+
+function renderPinStatus() {
+  $('#pin-status').textContent = state.pin
+    ? 'A PIN is set on this device. It is needed to leave the gallery and to open a tattoo’s details from it.'
+    : 'No PIN is set on this device. Set one before showing the gallery to clients.';
+  $('#pin-set-label').textContent = state.pin ? 'Change PIN' : 'Set PIN';
+  $('#pin-remove').hidden = !state.pin;
+}
+
+async function changePin() {
+  const hadPin = Boolean(state.pin);
+  if (await openPinDialog({ mode: 'set', title: hadPin ? 'Change PIN' : 'Set a PIN' })) {
+    showToast(hadPin ? 'PIN changed' : 'PIN set');
+    renderPinStatus();
+  }
+}
+
+async function removePin() {
+  if (await openPinDialog({ mode: 'remove', title: 'Remove PIN' })) {
+    showToast('PIN removed');
+    renderPinStatus();
+  }
 }
 
 
@@ -1225,8 +1612,8 @@ async function openEditor(tattooId) {
     dirty: false,
   };
 
-  for (const name of ['tattoos', 'equipment', 'backup']) $(`#view-${name}`).hidden = true;
-  $('#view-editor').hidden = false;
+  showView('editor');
+  $('#gallery-exit').hidden = true;
   $('.tabbar').hidden = true;
   $('#fab').hidden = true;
   $('#back-button').hidden = false;
@@ -1385,13 +1772,26 @@ function openPhotoDialog(photo) {
   dialog.showModal();
 }
 
-/** Picks the picture shown in the list: healed first, then finished, stencil, reference. */
-function chooseCoverThumb(photos) {
+/**
+ * Picks the photo shown in the list and the gallery: the latest healed photo,
+ * else the latest finished, stencil, then reference photo.
+ * Returns the fields to store on the tattoo.
+ */
+function coverFields(photos) {
   for (const kind of ['healed', 'finished', 'stencil', 'reference']) {
     const latest = photos.filter((p) => p.kind === kind).sort((a, b) => b.takenAt.localeCompare(a.takenAt))[0];
-    if (latest) return latest.thumb;
+    if (latest) return { coverPhotoId: latest.id, coverKind: latest.kind, coverThumb: latest.thumb };
   }
-  return null;
+  return { coverPhotoId: null, coverKind: null, coverThumb: null };
+}
+
+/** Tattoos saved before the gallery existed don't know their cover photo yet. Works it out once. */
+async function fillMissingCovers() {
+  const missing = state.tattoos.filter((tattoo) => tattoo.coverPhotoId === undefined);
+  for (const tattoo of missing) {
+    Object.assign(tattoo, coverFields(await getPhotosForTattoo(tattoo.id)));
+    await putRecord('tattoos', tattoo);
+  }
 }
 
 /** Works out how stock should change compared with what was saved before. */
@@ -1423,7 +1823,7 @@ async function saveEditor(event) {
     return;
   }
 
-  tattoo.coverThumb = chooseCoverThumb(editor.photos);
+  Object.assign(tattoo, coverFields(editor.photos));
   tattoo.updatedAt = new Date().toISOString();
   const photosToSave = editor.photos
     .filter((photo) => photo.changed)
@@ -1878,6 +2278,7 @@ async function importBackup(file) {
       (backup.cartridges ?? []).forEach((record) => t.objectStore('cartridges').put(record));
     });
     await reloadData();
+    await fillMissingCovers(); // backups made before the gallery existed
     requestPersistentStorage();
     renderBackupInfo();
     showToast('Backup restored');
@@ -1945,6 +2346,29 @@ function bindEvents() {
   });
   document.querySelectorAll('[data-stepper-for]').forEach(bindStepper);
 
+  // Gallery and photo viewer
+  $('#gallery-exit').addEventListener('click', leaveGallery);
+  $('#viewer-close').addEventListener('click', () => $('#viewer').close());
+  $('#viewer-prev').addEventListener('click', () => stepViewer(-1));
+  $('#viewer-next').addEventListener('click', () => stepViewer(1));
+  $('#viewer-details').addEventListener('click', openViewerDetails);
+  $('#viewer-track').addEventListener('scroll', (event) => {
+    const track = event.currentTarget;
+    if (track.clientWidth) setViewerIndex(Math.round(track.scrollLeft / track.clientWidth));
+  }, { passive: true });
+  $('#viewer').addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') stepViewer(-1);
+    if (event.key === 'ArrowRight') stepViewer(1);
+  });
+  $('#viewer').addEventListener('close', () => {
+    $('#viewer-track').replaceChildren();
+    releaseUrls('viewer');
+  });
+
+  // Artist: PIN
+  $('#pin-set').addEventListener('click', changePin);
+  $('#pin-remove').addEventListener('click', removePin);
+
   // Backup
   $('#export-button').addEventListener('click', exportBackup);
   $('#import-input').addEventListener('change', (event) => {
@@ -1959,6 +2383,7 @@ async function start() {
   try {
     db = await openDatabase();
     await reloadData();
+    await loadPin();
   } catch (error) {
     const banner = $('#storage-banner');
     banner.textContent = `This browser does not allow the app to save data here (${error.message}). Open the app file directly in Safari or Chrome.`;
@@ -1966,7 +2391,11 @@ async function start() {
     $('#fab').hidden = true;
     return;
   }
-  showTab('tattoos');
+  try {
+    await fillMissingCovers();
+  } catch { /* the gallery then just misses older tattoos until they are saved again */ }
+  // Reopen the locked gallery if the page was reloaded while a client was looking at it.
+  showTab(wasGalleryLocked() && state.pin ? 'gallery' : 'tattoos');
 }
 
 start();
