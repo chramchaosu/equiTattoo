@@ -8,7 +8,7 @@ The whole app is one file, `index.html`. It needs no server, no build step and n
 **Tattoos**
 - Each tattoo has a date and the client's name (both required), plus an optional description and notes.
 - Optional client questions: age group (15–24, 25–34, 35–44, 45–54, 55–64, 65–99+) and gender.
-- Photos in three groups: reference photos from the client, the finished tattoo, and the healed tattoo.
+- Photos in four groups: reference photos from the client, the stencil, the finished tattoo, and the healed tattoo.
   Every photo has an editable time stamp; healed photos also show how many days after the session they were taken.
 - Cartridges used, added either
   1. **by hand**: brand, needle thickness, needle count, type. The most used combinations, brands and types are offered first, or
@@ -32,7 +32,7 @@ Data model (IndexedDB database `equiTattoo`, version 1):
 | Store        | Record |
 |--------------|--------|
 | `tattoos`    | `{ id, date, clientName, description, ageGroup, gender, notes, cartridges[], coverThumb, createdAt, updatedAt }` |
-| `photos`     | `{ id, tattooId, kind: 'reference' \| 'finished' \| 'healed', takenAt, image, thumb, addedAt }` |
+| `photos`     | `{ id, tattooId, kind: 'reference' \| 'stencil' \| 'finished' \| 'healed', takenAt, image, thumb, addedAt }` |
 | `cartridges` | `{ id, brand, gauge, needleCount, config, quantity, lowStockAt, createdAt, updatedAt }` |
 
 Photos are shrunk to at most 1600 px (plus a 320 px thumbnail) before saving.

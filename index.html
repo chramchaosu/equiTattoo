@@ -391,6 +391,10 @@
         <div class="photo-grid" data-photo-kind="reference"></div>
       </div>
       <div class="panel">
+        <h2>Stencil</h2>
+        <div class="photo-grid" data-photo-kind="stencil"></div>
+      </div>
+      <div class="panel">
         <h2>Finished tattoo</h2>
         <div class="photo-grid" data-photo-kind="finished"></div>
       </div>
@@ -572,7 +576,7 @@
 // Six age groups covering 15 to 99+.
 const AGE_GROUPS = ['15–24', '25–34', '35–44', '45–54', '55–64', '65–99+'];
 const GENDERS = ['Woman', 'Man', 'Non-binary', 'Other'];
-const PHOTO_KINDS = ['reference', 'finished', 'healed'];
+const PHOTO_KINDS = ['reference', 'stencil', 'finished', 'healed'];
 
 // Needle thickness. Labels usually print the gauge number (#12 = "12" in 1203RL)
 // or the diameter in millimetres.
@@ -743,6 +747,7 @@ function releaseUrls(group) {
                    cartridges: [{ id, brand, gauge, needleCount, config, count, stockId }],
                    coverThumb, createdAt, updatedAt }
      photos      { id, tattooId, kind, takenAt, image, thumb, addedAt }
+                 kind is one of PHOTO_KINDS: reference, stencil, finished, healed
 */
 
 const DB_NAME = 'equiTattoo';
@@ -1273,7 +1278,8 @@ function renderEditorPhotos() {
       class: 'visually-hidden', id: inputId, type: 'file', accept: 'image/*', multiple: true,
       onchange: (event) => addPhotos(kind, event.target.files),
     });
-    const addTile = el('label', { class: 'add-tile', for: inputId }, icon('camera'), kind === 'reference' ? 'Add reference' : 'Add photo');
+    const addLabels = { reference: 'Add reference', stencil: 'Add stencil' };
+    const addTile = el('label', { class: 'add-tile', for: inputId }, icon('camera'), addLabels[kind] ?? 'Add photo');
     grid.replaceChildren(...tiles, addTile, input);
   }
 }
@@ -1341,9 +1347,9 @@ function openPhotoDialog(photo) {
   dialog.showModal();
 }
 
-/** Picks the picture shown in the list: healed first, then finished, then reference. */
+/** Picks the picture shown in the list: healed first, then finished, stencil, reference. */
 function chooseCoverThumb(photos) {
-  for (const kind of ['healed', 'finished', 'reference']) {
+  for (const kind of ['healed', 'finished', 'stencil', 'reference']) {
     const latest = photos.filter((p) => p.kind === kind).sort((a, b) => b.takenAt.localeCompare(a.takenAt))[0];
     if (latest) return latest.thumb;
   }
